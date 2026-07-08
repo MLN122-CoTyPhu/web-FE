@@ -4,7 +4,19 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useGameSocket } from "@/hooks/useGameSocket";
 import { BOARD_CELLS, CELL_COLORS, CELL_TYPE_LABELS, type BoardCellFull } from "@/data/boardData";
-import type { Player, EventCard, VoteSession, PlayerRole } from "@/types/game";
+import type { Player, EventCard, VoteSession, QuizSession, QuizResult, PlayerRole } from "@/types/game";
+
+// ─── Score helpers ───────────────────────────────────────────────────────────
+// Điểm = Tiền + Giá trị tài sản đã thâu tóm + Tự chủ×10 + Quyền lực mềm×5
+function ownedAssetValue(player: Player): number {
+  return player.ownedCells.reduce((sum, id) => {
+    const cell = BOARD_CELLS.find(c => c.id === id);
+    return sum + (cell?.price ?? 0);
+  }, 0);
+}
+function computeScore(player: Player): number {
+  return player.money + ownedAssetValue(player) + player.autonomy * 10 + player.softPower * 5;
+}
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -116,7 +128,7 @@ function StatBar({ value, color }: { value: number; color: string }) {
 function PlayerPanel({
   player, isCurrent, isMe,
 }: { player: Player; isCurrent: boolean; tokenColor: string; isMe: boolean }) {
-  const score = player.money + player.autonomy * 10 + player.softPower * 5;
+  const score = computeScore(player);
   const roleColor = ROLE_COLORS[player.role] ?? "#8BA3CC";
 
   return (
@@ -211,6 +223,16 @@ function PlayerPanel({
         </span>
       </div>
 
+      {/* Owned cells (thâu tóm) */}
+      {player.ownedCells.length > 0 && (
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs" style={{ color: "var(--text-secondary)" }}>🏭 Đã thâu tóm</span>
+          <span className="text-xs font-bold" style={{ color: "var(--gold-400)" }}>
+            {player.ownedCells.length} ô &middot; ${ownedAssetValue(player).toLocaleString()}
+          </span>
+        </div>
+      )}
+
       {/* Autonomy */}
       <div className="flex items-center justify-between mb-1">
         <span className="text-[11px]" style={{ color: "var(--text-secondary)" }}>🏛️ Tự chủ</span>
@@ -243,7 +265,7 @@ function PlayerPanel({
 
 function BoardCell({
   cell, index, players, tokenColors, isMyPosition,
-  visualPositions, pendingPlayerId, onTokenClick,
+  visualPositions, pendingPlayerId, onTokenClick, cellOwners,
 }: {
   cell: typeof BOARD_CELLS[0];
   index: number;
@@ -253,7 +275,10 @@ function BoardCell({
   visualPositions: Record<string, number>;
   pendingPlayerId: string | null;
   onTokenClick: () => void;
+  cellOwners: Record<number, string>;
 }) {
+  const ownerId = cell.ownable ? cellOwners[cell.id] : undefined;
+  const ownerColor = ownerId ? (tokenColors[ownerId] ?? "bg-white") : undefined;
   const pos     = CELL_POSITIONS[index];
   const isLeft  = pos.col === 1  && pos.row !== 1 && pos.row !== 11;
   const isRight = pos.col === 11 && pos.row !== 1 && pos.row !== 11;
@@ -313,10 +338,31 @@ function BoardCell({
     </>
   );
 
+  const OwnerMark = () => {
+    if (!cell.ownable) return null;
+    if (ownerId) {
+      return (
+        <div
+          className={`absolute top-0.5 left-0.5 w-2.5 h-2.5 rounded-full border border-white/70 z-10 ${ownerColor}`}
+          title="Đã bị thâu tóm"
+        />
+      );
+    }
+    return (
+      <div
+        className="absolute bottom-0 left-0 right-0 text-center leading-none pb-px"
+        style={{ color: "#FFD740", fontSize: "6px", fontWeight: 700 }}
+      >
+        ${cell.price}
+      </div>
+    );
+  };
+
   if (isCorner) {
     return (
       <div className={baseClass} style={{ gridRow: pos.row, gridColumn: pos.col }}>
         <Tooltip />
+        <OwnerMark />
         <div className="text-center p-1 flex flex-col items-center gap-0.5">
           <div className="text-xl leading-none">{emoji}</div>
           <div className="text-[10px] font-bold leading-tight line-clamp-2">{shortName}</div>
@@ -337,6 +383,7 @@ function BoardCell({
         style={{ gridRow: pos.row, gridColumn: pos.col }}
       >
         <Tooltip />
+        <OwnerMark />
         {stripDir && (
           <div className={`prop-strip ${stripDir}`} style={{ background: stripColor }} />
         )}
@@ -360,6 +407,7 @@ function BoardCell({
       style={{ gridRow: pos.row, gridColumn: pos.col }}
     >
       <Tooltip />
+      <OwnerMark />
       {stripDir && (
         <div className={`prop-strip ${stripDir}`} style={{ background: stripColor }} />
       )}
@@ -379,7 +427,12 @@ function BoardCell({
 
 // ─── Cell Landing Modal ───────────────────────────────────────────────────────
 
-function CellLandingModal({ cell, onClose }: { cell: BoardCellFull; onClose: () => void }) {
+function CellLandingModal({ cell, ownerName, isMine, onClose }: {
+  cell: BoardCellFull;
+  ownerName?: string;
+  isMine?: boolean;
+  onClose: () => void;
+}) {
   const typeLabel = CELL_TYPE_LABELS[cell.type] ?? cell.type;
 
   const typeGradient: Record<string, string> = {
@@ -451,6 +504,40 @@ function CellLandingModal({ cell, onClose }: { cell: BoardCellFull; onClose: () 
             {cell.description}
           </p>
         </div>
+
+        {/* Ownable — quiz để thâu tóm / phí thuê */}
+        {cell.ownable && (
+          <div
+            className="mx-5 mb-3 rounded-xl p-3 space-y-1.5"
+            style={{ background: "rgba(0,0,0,0.38)", border: "1px solid rgba(255,215,64,0.2)" }}
+          >
+            <p className="text-[10px] font-bold uppercase tracking-widest mb-1"
+              style={{ color: "var(--gold-400)" }}>
+              🏭 Tài sản có thể thâu tóm
+            </p>
+            <div className="flex items-center justify-between">
+              <span className="text-sm" style={{ color: "rgba(200,216,240,0.9)" }}>💰 Giá mua</span>
+              <span className="text-sm font-bold" style={{ color: "var(--gold-300)", fontFamily: "var(--font-code)" }}>
+                ${cell.price}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm" style={{ color: "rgba(200,216,240,0.9)" }}>💸 Phí thuê</span>
+              <span className="text-sm font-bold" style={{ color: "#FF8080", fontFamily: "var(--font-code)" }}>
+                ${cell.rent}
+              </span>
+            </div>
+            {ownerName ? (
+              <div className="text-xs pt-1.5" style={{ color: isMine ? "#40E090" : "#FF6B7A" }}>
+                {isMine ? "✅ Bạn đã thâu tóm ô này" : `🔒 Đã bị thâu tóm bởi ${ownerName}`}
+              </div>
+            ) : (
+              <div className="text-xs pt-1.5" style={{ color: "rgba(139,163,204,0.7)" }}>
+                ❓ Chưa có chủ — trả lời đúng câu hỏi để mua
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Effects */}
         {(fx.money || fx.autonomy || fx.softPower || fx.drawCard || fx.councilVote) && (
@@ -864,6 +951,143 @@ function VoteModal({ vote, onVote, totalPlayers }: {
   );
 }
 
+// ─── Quiz Modal (thâu tóm bằng câu hỏi) ──────────────────────────────────────
+
+function QuizModal({ quiz, myPlayerId, playerName, onAnswer }: {
+  quiz: QuizSession;
+  myPlayerId: string | undefined;
+  playerName: string;
+  onAnswer: (i: number) => void;
+}) {
+  const [selected, setSelected] = useState<number | null>(null);
+  const isMe = quiz.playerId === myPlayerId;
+  const letters = ["A", "B", "C", "D"];
+
+  return (
+    <div
+      className="fixed inset-0 flex items-center justify-center z-50 p-4"
+      style={{ background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)" }}
+    >
+      <div
+        className="animate-modal-entrance w-full max-w-md rounded-2xl overflow-hidden"
+        style={{
+          background: "linear-gradient(160deg, #241800 0%, #140D00 100%)",
+          border: "1.5px solid rgba(255,215,64,0.45)",
+          boxShadow: "0 0 0 1px rgba(255,255,255,0.04), 0 24px 70px rgba(0,0,0,0.85), 0 0 60px rgba(255,215,64,0.12)",
+        }}
+      >
+        {/* Header */}
+        <div className="px-6 pt-5 pb-3">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-2xl">❓</span>
+            <span className="font-bold text-sm uppercase tracking-widest" style={{ color: "var(--gold-400)" }}>
+              Câu Hỏi Thâu Tóm
+            </span>
+          </div>
+          <div
+            className="rounded-xl px-4 py-3 mb-3"
+            style={{ background: "rgba(255,215,64,0.08)", border: "1px solid rgba(255,215,64,0.2)" }}
+          >
+            <p className="font-bold text-sm mb-1" style={{ color: "var(--gold-300)" }}>
+              📍 {quiz.cellName}
+            </p>
+            <p className="text-xs" style={{ color: "rgba(200,216,240,0.75)" }}>
+              Giá mua nếu trả lời đúng: <span style={{ color: "var(--gold-400)", fontWeight: 700 }}>${quiz.price}</span>
+            </p>
+          </div>
+          <p className="font-semibold text-base leading-snug" style={{ color: "var(--text-primary)" }}>
+            {quiz.question}
+          </p>
+        </div>
+
+        {/* Options / waiting */}
+        {isMe ? (
+          <div className="px-6 pb-4 space-y-2.5">
+            {quiz.options.map((opt, i) => {
+              const isChosen = selected === i;
+              const isDisabled = selected !== null && !isChosen;
+              return (
+                <button
+                  key={i}
+                  onClick={() => { setSelected(i); onAnswer(i); }}
+                  disabled={selected !== null}
+                  className="w-full text-left px-4 py-3 rounded-xl text-sm transition-all flex gap-2"
+                  style={{
+                    background: isChosen ? "rgba(255,215,64,0.15)" : "rgba(255,255,255,0.04)",
+                    border: `1.5px solid ${isChosen ? "var(--gold-400)" : "rgba(255,255,255,0.1)"}`,
+                    color: isDisabled ? "rgba(139,163,204,0.4)" : "var(--text-primary)",
+                    cursor: selected !== null ? "not-allowed" : "pointer",
+                    opacity: isDisabled ? 0.5 : 1,
+                  }}
+                >
+                  <span className="font-bold flex-shrink-0" style={{ color: "var(--gold-400)" }}>{letters[i]}.</span>
+                  <span>{opt}</span>
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="px-6 pb-5">
+            <p className="text-center text-sm py-3 animate-pulse" style={{ color: "var(--text-secondary)" }}>
+              ⏳ Đang chờ <strong className="text-white">{playerName}</strong> trả lời...
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function QuizResultModal({ result, onClose }: { result: QuizResult; onClose: () => void }) {
+  const good = result.correct;
+  return (
+    <div
+      className="fixed inset-0 flex items-center justify-center z-50 p-4"
+      style={{ background: "rgba(0,0,0,0.78)", backdropFilter: "blur(8px)" }}
+      onClick={onClose}
+    >
+      <div
+        className="animate-card-flip-in w-full max-w-xs rounded-2xl overflow-hidden"
+        style={{
+          background: good
+            ? "linear-gradient(160deg, #00280A 0%, #001205 100%)"
+            : "linear-gradient(160deg, #3D0000 0%, #1A0000 100%)",
+          border: `1.5px solid ${good ? "#00C853" : "#FF3B3B"}50`,
+          boxShadow: "0 0 0 1px rgba(255,255,255,0.04), 0 24px 70px rgba(0,0,0,0.85)",
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="px-5 pt-5 pb-4 text-center">
+          <div className="text-3xl mb-2">{good ? (result.purchased ? "🏭" : "✅") : "❌"}</div>
+          <h3 className="text-lg font-bold text-white mb-1.5" style={{ fontFamily: "var(--font-display)" }}>
+            {good
+              ? (result.purchased ? "Thâu tóm thành công!" : "Trả lời đúng!")
+              : "Trả lời sai!"}
+          </h3>
+          <p className="text-sm leading-relaxed" style={{ color: "rgba(200,216,240,0.85)" }}>
+            {good
+              ? (result.purchased
+                  ? `Đã mua thành công [${result.cellName}]. Từ giờ người khác dẫm vào sẽ phải trả phí thuê cho bạn.`
+                  : `Bạn hiểu đúng kiến thức nhưng chưa đủ vốn để mua [${result.cellName}] (+5 Tự chủ).`)
+              : `Đáp án đúng là phương án ${["A","B","C","D"][result.correctIndex]}. Mất $30 chi phí cơ hội và -10 Tự chủ.`}
+          </p>
+        </div>
+        <button
+          onClick={onClose}
+          className="w-full py-3 font-bold text-sm transition-all"
+          style={{
+            background: "rgba(255,255,255,0.07)",
+            color: "rgba(240,244,255,0.9)",
+            borderTop: "1px solid rgba(255,255,255,0.07)",
+          }}
+        >
+          Đã hiểu ✓
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Rules Modal ─────────────────────────────────────────────────────────────
 
 function RulesModal({ onClose }: { onClose: () => void }) {
@@ -912,10 +1136,10 @@ function RulesModal({ onClose }: { onClose: () => void }) {
             </h3>
             <div className="rounded-xl px-4 py-3" style={{ background: "rgba(255,215,64,0.07)", border: "1px solid rgba(255,215,64,0.2)" }}>
               <p className="font-bold text-center text-base" style={{ color: "var(--gold-400)", fontFamily: "var(--font-code)" }}>
-                Điểm = Tiền + Tự chủ × 10 + Quyền lực mềm × 5
+                Điểm = Tiền + Giá trị tài sản đã thâu tóm + Tự chủ×10 + Quyền lực mềm×5
               </p>
               <p className="text-center text-xs mt-1.5" style={{ color: "rgba(255,215,64,0.6)" }}>
-                Tự chủ = 0 → thua ngay lập tức, dù nhiều tiền nhất
+                Tự chủ = 0 → thua ngay lập tức, dù nhiều tiền/tài sản nhất
               </p>
             </div>
           </section>
@@ -928,11 +1152,11 @@ function RulesModal({ onClose }: { onClose: () => void }) {
             <div className="space-y-2">
               {[
                 { icon: "💰", name: "Tư bản tài chính", money: "$2.500", auto: "45", sp: "60",
-                  note: "Nhận tiền (đổi dấu) tại ô đỏ/xanh/cam. Chịu khủng hoảng 30%." },
+                  note: "Trả phí thuê chỉ 50% khi dẫm ô người khác (có kênh vốn thay thế). Chịu khủng hoảng 30%." },
                 { icon: "🇻🇳", name: "Việt Nam", money: "$1.500", auto: "80", sp: "65",
-                  note: "Giảm 50% thiệt hại tư bản. Rút thẻ Chính sách (toàn tốt) tại ô Việt Nam." },
+                  note: "Trả phí thuê 60% (nhà nước điều tiết). Rút thẻ Chính sách (toàn tốt) tại ô Việt Nam." },
                 { icon: "🌏", name: "Nước đang phát triển", money: "$1.200", auto: "85", sp: "45",
-                  note: "Tự chủ cao nhất. Chịu 100% thiệt hại và 120% khi khủng hoảng." },
+                  note: "Tự chủ cao nhất nhưng trả phí thuê 100% (đầy đủ) và 120% khi khủng hoảng." },
               ].map(r => (
                 <div key={r.name} className="rounded-xl px-3 py-2.5 flex gap-3 items-start"
                   style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
@@ -960,9 +1184,9 @@ function RulesModal({ onClose }: { onClose: () => void }) {
               {[
                 ["1",  "Tung xúc xắc",        'Nhấn nút "Tung Xúc Xắc". Nếu đang bị chi phối: bấm bỏ lượt.'],
                 ["2",  "Di chuyển",            "Bấm vào biểu tượng đang nhảy để quân cờ đi từng bước đến ô đích."],
-                ["3",  "Áp dụng hiệu ứng ô",  "Tự động trừ/cộng tiền, tự chủ, quyền lực mềm theo ô."],
+                ["3",  "Xử lý ô đến",          "Ô sở hữu được: quiz để mua (chưa chủ) hoặc trả phí thuê (có chủ). Ô khác: hiệu ứng/thẻ/vote như thường."],
                 ["4a", "Đọc thông tin ô",      'Modal thông tin ô hiện ra, bấm "Đã hiểu ✓" để tiếp tục.'],
-                ["4b", "Đọc thẻ sự kiện",      '(Chỉ ô rút thẻ) Modal thẻ hiện tiếp theo, bấm "Đã hiểu ✓" lần 2.'],
+                ["4b", "Trả lời quiz / đọc thẻ", '(Tuỳ ô) Trả lời câu hỏi thâu tóm, hoặc đọc thẻ sự kiện, bấm "Đã hiểu ✓".'],
                 ["5",  "Kết thúc lượt",        'Bấm "Kết Thúc Lượt" để chuyển sang người tiếp theo.'],
               ].map(([step, title, desc]) => (
                 <div key={step} className="flex gap-3 items-start px-3 py-2 rounded-lg"
@@ -987,10 +1211,10 @@ function RulesModal({ onClose }: { onClose: () => void }) {
             </h3>
             <div className="grid grid-cols-2 gap-1.5">
               {[
-                ["#FF3B3B", "🔴 Tư bản tài chính (×10)", "Mất tiền + tự chủ. Tư bản TC nhận ngược lại."],
-                ["#FF8C00", "🟠 Tập đoàn (×5)", "Mất tiền + tự chủ. Tư bản TC nhận 40%."],
+                ["#FF3B3B", "🔴 Tư bản tài chính (×9, sở hữu được)", "Chưa chủ: quiz để mua. Có chủ: trả phí thuê."],
+                ["#FF8C00", "🟠 Tập đoàn (×4, sở hữu được)", "Chưa chủ: quiz để mua. Có chủ: trả phí thuê."],
                 ["#B44FFF", "🟣 Consortium (×5)", "Vote tập thể. Tư bản TC nhận cổ tức."],
-                ["#1E90FF", "🔵 TNC — Công ty xuyên QG (×8)", "Mất tiền. Tư bản TC nhận 50%."],
+                ["#1E90FF", "🔵 TNC — Công ty xuyên QG (×8, sở hữu được)", "Chưa chủ: quiz để mua. Có chủ: trả phí thuê."],
                 ["#00C853", "🟢 Việt Nam (×8)", "Việt Nam rút thẻ tốt. Khác: hiệu ứng thường."],
                 ["#FF1744", "⚫ Khủng hoảng (×3)", "Tất cả mất tiền. Nước ĐPT mất 120%."],
                 ["#FFD740", "⭐ Xuất phát (ô 0)", "Đi qua → nhận +$200."],
@@ -1002,6 +1226,23 @@ function RulesModal({ onClose }: { onClose: () => void }) {
                   <div className="text-[10px] mt-0.5" style={{ color: "rgba(139,163,204,0.65)" }}>{desc}</div>
                 </div>
               ))}
+            </div>
+          </section>
+
+          {/* Thâu tóm & Phí thuê */}
+          <section>
+            <h3 className="font-bold mb-2 text-base" style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>
+              🏭 Thâu Tóm &amp; Phí Thuê (Ô Đỏ/Cam/Xanh Dương)
+            </h3>
+            <div className="rounded-xl px-3 py-2.5 text-xs space-y-1.5"
+              style={{ background: "rgba(255,215,64,0.06)", border: "1px solid rgba(255,215,64,0.2)" }}>
+              <p style={{ color: "var(--text-primary)" }}>21 ô (Tư bản tài chính / Tập đoàn / TNC) có thể mua được:</p>
+              <p>• <strong style={{ color: "var(--gold-300)" }}>Chưa có chủ</strong> → hiện câu hỏi kiến thức Chương 4. Trả lời đúng + đủ tiền → <strong style={{ color: "#40E090" }}>thâu tóm</strong> ô đó (trở thành chủ).</p>
+              <p>• Trả lời <strong style={{ color: "#FF6B7A" }}>sai</strong> → mất $30 chi phí cơ hội và −10 Tự chủ.</p>
+              <p>• <strong style={{ color: "#FF6B7A" }}>Đã có chủ</strong> (người khác) → tự động trả <strong>phí thuê</strong> cho chủ sở hữu — mô phỏng việc chiếm đoạt giá trị thặng dư.</p>
+              <p>• Phí thuê thực trả tuỳ vai: <strong style={{ color: "#70B8FF" }}>Tư bản TC 50%</strong> · <strong style={{ color: "#40E090" }}>Việt Nam 60%</strong> · <strong style={{ color: "#FFAB40" }}>Nước ĐPT 100%</strong>.</p>
+              <p>• Dẫm vào ô của chính mình → miễn phí.</p>
+              <p>• Giá trị các ô đã thâu tóm được cộng vào điểm cuối game.</p>
             </div>
           </section>
 
@@ -1084,7 +1325,7 @@ function GameOverModal({
   onClose: () => void;
 }) {
   const sorted = [...players]
-    .map(p => ({ ...p, score: p.money + p.autonomy * 10 + p.softPower * 5 }))
+    .map(p => ({ ...p, score: computeScore(p) }))
     .sort((a, b) => b.score - a.score);
 
   // Players eliminated by autonomy reaching 0
@@ -1243,8 +1484,8 @@ export default function RoomPage() {
   const router   = useRouter();
   const roomCode = (params.id as string)?.toUpperCase();
   const {
-    socket, room, lastCard, voteSession, diceAnimation, isRolling,
-    startGame, rollDice, castVote, endTurn, dismissCard, leaveRoom, isConnected,
+    socket, room, lastCard, voteSession, quizSession, lastQuizResult, diceAnimation, isRolling,
+    startGame, rollDice, castVote, answerQuiz, endTurn, dismissCard, dismissQuizResult, leaveRoom, isConnected,
   } = useGameSocket();
   const logRef = useRef<HTMLDivElement>(null);
   const preRollPlayersRef = useRef<Player[]>([]);
@@ -1454,8 +1695,12 @@ export default function RoomPage() {
   const myVisualPos   = myPlayer ? (visualPositions[myPlayer.id] ?? myPlayer.position) : -1;
 
   const sortedScores = [...room.players]
-    .map(p => ({ ...p, score: p.money + p.autonomy * 10 + p.softPower * 5 }))
+    .map(p => ({ ...p, score: computeScore(p) }))
     .sort((a, b) => b.score - a.score);
+
+  const quizOwnerName = quizSession
+    ? room.players.find(p => p.id === quizSession.playerId)?.name ?? "?"
+    : "";
 
   const handleLeave = () => { leaveRoom(); router.replace("/"); };
 
@@ -1471,10 +1716,21 @@ export default function RoomPage() {
         />
       )}
       {!showGameOver && landingCell && (
-        <CellLandingModal cell={landingCell} onClose={() => setLandingCell(null)} />
+        <CellLandingModal
+          cell={landingCell}
+          ownerName={room.cellOwners[landingCell.id] ? room.players.find(p => p.id === room.cellOwners[landingCell.id])?.name : undefined}
+          isMine={!!myPlayer && room.cellOwners[landingCell.id] === myPlayer.id}
+          onClose={() => setLandingCell(null)}
+        />
       )}
       {!showGameOver && !landingCell && !pendingMove && turnHasAnimated && capturedCard && (
         <CardModal card={capturedCard} onClose={handleDismissCard} />
+      )}
+      {!showGameOver && !landingCell && !pendingMove && turnHasAnimated && !capturedCard && quizSession && (
+        <QuizModal quiz={quizSession} myPlayerId={myPlayer?.id} playerName={quizOwnerName} onAnswer={answerQuiz} />
+      )}
+      {!showGameOver && !landingCell && !pendingMove && !quizSession && lastQuizResult && (
+        <QuizResultModal result={lastQuizResult} onClose={dismissQuizResult} />
       )}
       {!showGameOver && !landingCell && !lastCard && !pendingMove && voteSession && (
         <VoteModal vote={voteSession} onVote={castVote}
@@ -1660,7 +1916,7 @@ export default function RoomPage() {
           >
             <p className="font-bold mb-1" style={{ color: "var(--text-primary)" }}>📊 Công thức điểm</p>
             <p style={{ color: "var(--text-secondary)", fontFamily: "var(--font-code)", fontSize: "11px" }}>
-              Tiền + Tự chủ×10 + Sức mạnh×5
+              Tiền + Tài sản thâu tóm + Tự chủ×10 + Sức mạnh×5
             </p>
             <p className="mt-1" style={{ color: "#FF6B7A" }}>⚠️ Tự chủ = 0 → Thua</p>
           </div>
@@ -1776,10 +2032,13 @@ export default function RoomPage() {
                 ? "rgba(0,200,83,0.1)"
                 : room.phase === "voting"
                 ? "rgba(180,79,255,0.1)"
+                : room.phase === "quiz"
+                ? "rgba(255,215,64,0.1)"
                 : "rgba(255,255,255,0.03)",
               border: `1px solid ${
                 room.phase === "playing" && isMyTurn ? "rgba(0,200,83,0.3)"
                 : room.phase === "voting" ? "rgba(180,79,255,0.3)"
+                : room.phase === "quiz" ? "rgba(255,215,64,0.3)"
                 : "rgba(255,255,255,0.06)"
               }`,
             }}
@@ -1796,6 +2055,9 @@ export default function RoomPage() {
               )}
               {room.phase === "voting" && (
                 <><span>🗳️</span><span className="font-bold" style={{ color: "#CE93D8" }}>Hội đồng đang biểu quyết...</span></>
+              )}
+              {room.phase === "quiz" && (
+                <><span>❓</span><span className="font-bold" style={{ color: "var(--gold-400)" }}>Đang trả lời câu hỏi thâu tóm...</span></>
               )}
               {room.phase === "finished" && (
                 <><span>🏁</span><span className="font-bold" style={{ color: "var(--gold-300)" }}>Trò chơi kết thúc!</span></>
@@ -1844,6 +2106,7 @@ export default function RoomPage() {
                   visualPositions={visualPositions}
                   pendingPlayerId={pendingMove?.pid ?? null}
                   onTokenClick={walkToken}
+                  cellOwners={room.cellOwners}
                 />
               ))}
 
@@ -1923,18 +2186,20 @@ export default function RoomPage() {
                         style={{ color: "var(--gold-400)" }}>
                         👆 Bấm vào biểu tượng để di chuyển!
                       </p>
-                    ) : landingCell || lastCard ? (
+                    ) : landingCell || lastCard || quizSession || lastQuizResult ? (
                       <p className="text-center text-sm py-1.5" style={{ color: "var(--text-secondary)" }}>
-                        📖 Đọc thông tin ô rồi bấm &quot;Đã hiểu&quot;...
+                        📖 Đọc thông tin ô / trả lời quiz rồi bấm &quot;Đã hiểu&quot;...
                       </p>
                     ) : (
                       <>
                         <button
                           onClick={endTurn}
-                          disabled={room.phase === "voting"}
+                          disabled={room.phase === "voting" || room.phase === "quiz"}
                           className="btn-green w-full py-2 sm:py-2.5 text-sm"
                         >
-                          {room.phase === "voting" ? "⏳ Chờ kết quả biểu quyết..." : "✓ Kết Thúc Lượt"}
+                          {room.phase === "voting" ? "⏳ Chờ kết quả biểu quyết..."
+                            : room.phase === "quiz" ? "⏳ Chờ trả lời quiz..."
+                            : "✓ Kết Thúc Lượt"}
                         </button>
                         <p className="text-center text-[10px]" style={{ color: "rgba(139,163,204,0.5)" }}>
                           Đã đến ô — nhấn kết thúc để chuyển lượt
@@ -2007,14 +2272,16 @@ export default function RoomPage() {
                 <p className="text-center text-sm animate-pulse py-1" style={{ color: "var(--gold-400)" }}>
                   👆 Bấm vào biểu tượng để di chuyển!
                 </p>
-              ) : landingCell || lastCard ? (
+              ) : landingCell || lastCard || quizSession || lastQuizResult ? (
                 <p className="text-center text-sm py-1" style={{ color: "var(--text-secondary)" }}>
-                  📖 Đọc thông tin ô rồi bấm &quot;Đã hiểu&quot;...
+                  📖 Đọc thông tin ô / trả lời quiz...
                 </p>
               ) : (
-                <button onClick={endTurn} disabled={room.phase === "voting"}
+                <button onClick={endTurn} disabled={room.phase === "voting" || room.phase === "quiz"}
                   className="btn-green w-full py-3">
-                  {room.phase === "voting" ? "⏳ Chờ biểu quyết..." : "✓ Kết Thúc Lượt"}
+                  {room.phase === "voting" ? "⏳ Chờ biểu quyết..."
+                    : room.phase === "quiz" ? "⏳ Chờ quiz..."
+                    : "✓ Kết Thúc Lượt"}
                 </button>
               )}
             </div>
@@ -2042,7 +2309,32 @@ export default function RoomPage() {
                   <div className="text-xs mt-1 leading-relaxed" style={{ color: "var(--text-secondary)" }}>
                     {curCell?.description}
                   </div>
-                  {curCell && (() => {
+                  {curCell?.ownable && (() => {
+                    const curOwnerId = room.cellOwners[curCell.id];
+                    const curOwnerName = curOwnerId ? room.players.find(p => p.id === curOwnerId)?.name : undefined;
+                    return (
+                      <div className="mt-2 space-y-1">
+                        <div className="flex flex-wrap gap-1">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
+                            style={{ background: "rgba(255,215,64,0.12)", color: "var(--gold-300)", fontFamily: "var(--font-code)" }}>
+                            💰 Giá ${curCell.price}
+                          </span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
+                            style={{ background: "rgba(255,59,59,0.12)", color: "#FF8080", fontFamily: "var(--font-code)" }}>
+                            💸 Thuê ${curCell.rent}
+                          </span>
+                        </div>
+                        {curOwnerName ? (
+                          <div className="text-[10px]" style={{ color: curOwnerId === myPlayer?.id ? "#40E090" : "#FF6B7A" }}>
+                            {curOwnerId === myPlayer?.id ? "✅ Của bạn" : `🔒 Chủ: ${curOwnerName}`}
+                          </div>
+                        ) : (
+                          <div className="text-[10px]" style={{ color: "rgba(139,163,204,0.6)" }}>❓ Chưa có chủ</div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                  {curCell && !curCell.ownable && (() => {
                     const fx = curCell.effect;
                     return (
                       <div className="mt-2 flex flex-wrap gap-1">

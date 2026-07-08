@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
 import {
-  GameRoom, EventCard, VoteSession, PlayerRole,
+  GameRoom, EventCard, VoteSession, QuizSession, QuizResult, PlayerRole,
   ServerToClientEvents, ClientToServerEvents,
 } from "../types/game";
 
@@ -12,6 +12,8 @@ interface UseGameSocketReturn {
   room: GameRoom | null;
   lastCard: EventCard | null;
   voteSession: VoteSession | null;
+  quizSession: QuizSession | null;
+  lastQuizResult: QuizResult | null;
   diceAnimation: { playerId: string; value: number } | null;
   isRolling: boolean;
   isConnected: boolean;
@@ -20,8 +22,10 @@ interface UseGameSocketReturn {
   startGame: () => void;
   rollDice: () => void;
   castVote: (optionIndex: number) => void;
+  answerQuiz: (optionIndex: number) => void;
   endTurn: () => void;
   dismissCard: () => void;
+  dismissQuizResult: () => void;
   leaveRoom: () => void;
 }
 
@@ -32,6 +36,8 @@ export function useGameSocket(): UseGameSocketReturn {
   const [room, setRoom] = useState<GameRoom | null>(null);
   const [lastCard, setLastCard] = useState<EventCard | null>(null);
   const [voteSession, setVoteSession] = useState<VoteSession | null>(null);
+  const [quizSession, setQuizSession] = useState<QuizSession | null>(null);
+  const [lastQuizResult, setLastQuizResult] = useState<QuizResult | null>(null);
   const [diceAnimation, setDiceAnimation] = useState<{ playerId: string; value: number } | null>(null);
   const [isRolling, setIsRolling] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
@@ -84,6 +90,18 @@ export function useGameSocket(): UseGameSocketReturn {
       setVoteSession(null);
     });
 
+    socket.on("quiz_started", (quiz) => {
+      setQuizSession(quiz);
+      setLastQuizResult(null);
+    });
+
+    socket.on("quiz_result", (result) => {
+      setQuizSession(null);
+      setLastQuizResult(result);
+      // Auto clear sau 6 giây
+      setTimeout(() => setLastQuizResult(null), 6000);
+    });
+
     socket.on("dice_rolled", (playerId, value) => {
       setIsRolling(false);
       setDiceAnimation({ playerId, value });
@@ -134,6 +152,14 @@ export function useGameSocket(): UseGameSocketReturn {
     socketRef.current?.emit("cast_vote", { optionIndex });
   }, []);
 
+  const answerQuiz = useCallback((optionIndex: number) => {
+    socketRef.current?.emit("answer_quiz", { optionIndex });
+  }, []);
+
+  const dismissQuizResult = useCallback(() => {
+    setLastQuizResult(null);
+  }, []);
+
   const endTurn = useCallback(() => {
     socketRef.current?.emit("end_turn");
   }, []);
@@ -154,6 +180,8 @@ export function useGameSocket(): UseGameSocketReturn {
     room,
     lastCard,
     voteSession,
+    quizSession,
+    lastQuizResult,
     diceAnimation,
     isRolling,
     isConnected,
@@ -162,8 +190,10 @@ export function useGameSocket(): UseGameSocketReturn {
     startGame,
     rollDice,
     castVote,
+    answerQuiz,
     endTurn,
     dismissCard,
+    dismissQuizResult,
     leaveRoom,
   };
 }

@@ -16,6 +16,7 @@ export interface Player {
   isActive: boolean;
   hasLeft: boolean;       // true = thoát chủ động, không thể reconnect
   socketId: string;
+  ownedCells: number[];   // các ô (id) đã thâu tóm được
 }
 
 export type CellType =
@@ -34,6 +35,41 @@ export interface BoardCell {
   type: CellType;
   description: string;
   effect: CellEffect;
+
+  // ── Cơ chế sở hữu — mua bằng quiz + thu phí thuê (rent) ──────────────────
+  ownable?: boolean;
+  price?: number;
+  rent?: number;
+  rentAutonomy?: number;
+  quiz?: QuizQuestion;
+}
+
+// ============================================
+// QUIZ — cơ chế "thâu tóm" độc quyền qua câu hỏi kiến thức
+// ============================================
+export interface QuizQuestion {
+  question: string;
+  options: string[];
+  correctIndex: number;
+}
+
+// Phiên bản gửi từ server khi quiz bắt đầu — không có correctIndex
+export interface QuizSession {
+  cellId: number;
+  cellName: string;
+  playerId: string;
+  question: string;
+  options: string[];
+  price: number;
+}
+
+export interface QuizResult {
+  correct: boolean;
+  correctIndex: number;
+  cellId: number;
+  cellName: string;
+  playerId: string;
+  purchased: boolean;
 }
 
 export interface CellEffect {
@@ -61,6 +97,7 @@ export type GamePhase =
   | "waiting"     // chờ đủ người
   | "playing"     // đang chơi
   | "voting"      // đang vote hội đồng
+  | "quiz"        // đang trả lời quiz để mua ô
   | "finished"    // kết thúc
 
 export interface VoteSession {
@@ -86,6 +123,8 @@ export interface GameRoom {
   hasRolled: boolean;       // player chỉ được tung 1 lần mỗi lượt
   lastEvent: string | null;
   voteSession: VoteSession | null;
+  quizSession: QuizSession | null;
+  cellOwners: Record<number, string>;  // cellId → playerId
   log: string[];            // feed sự kiện
 }
 
@@ -96,6 +135,9 @@ export interface ServerToClientEvents {
   card_drawn: (card: EventCard, playerId: string) => void;
   vote_started: (vote: VoteSession) => void;
   vote_result: (result: { winner: string; votes: Record<string, number> }) => void;
+  quiz_started: (quiz: QuizSession) => void;
+  quiz_result: (result: QuizResult) => void;
+  rent_paid: (data: { payerId: string; ownerId: string; cellId: number; amount: number }) => void;
   error: (msg: string) => void;
   reconnect_failed: () => void;
   player_joined: (player: Player) => void;
@@ -110,6 +152,7 @@ export interface ClientToServerEvents {
   start_game: () => void;
   roll_dice: () => void;
   cast_vote: (data: { optionIndex: number }) => void;
+  answer_quiz: (data: { optionIndex: number }) => void;
   end_turn: () => void;
   leave_room: () => void;
 }
