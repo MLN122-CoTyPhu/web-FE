@@ -69,7 +69,7 @@ const STRIP_COLORS: Record<string, string> = {
   tnc:               "#1E90FF",
   vietnam:           "#00C853",
   crisis:            "#FF1744",
-  start:             "#FFD740",
+  start:             "#e8b923",
   free:              "#00BFA5",
 };
 
@@ -136,7 +136,7 @@ function PlayerPanel({
       className={`rounded-2xl p-3 transition-all duration-300 ${isCurrent ? "game-card-active" : "game-card"}`}
       style={{
         background: isCurrent
-          ? "linear-gradient(135deg, #1A2F5A 0%, #152040 100%)"
+          ? "linear-gradient(135deg, #3a2015 0%, #2c1810 100%)"
           : "var(--bg-surface-1)",
       }}
     >
@@ -300,7 +300,7 @@ function BoardCell({
   const shortName = rawName.split(" — ")[0];
 
   const baseClass = `border ${colors} relative flex select-none group
-    ${isMyPosition ? "ring-2 ring-white/60 ring-offset-1 ring-offset-[#050A14] z-10" : ""}
+    ${isMyPosition ? "ring-2 ring-white/60 ring-offset-1 ring-offset-[#17100e] z-10" : ""}
     ${isCorner ? "items-center justify-center" : ""}
   `;
 
@@ -351,7 +351,7 @@ function BoardCell({
     return (
       <div
         className="absolute bottom-0 left-0 right-0 text-center leading-none pb-px"
-        style={{ color: "#FFD740", fontSize: "6px", fontWeight: 700 }}
+        style={{ color: "#e8b923", fontSize: "6px", fontWeight: 700 }}
       >
         ${cell.price}
       </div>
@@ -453,7 +453,7 @@ function CellLandingModal({ cell, ownerName, isMine, onClose }: {
     tnc:               "#1E90FF",
     vietnam:           "#00C853",
     crisis:            "#FF1744",
-    start:             "#FFD740",
+    start:             "#e8b923",
     free:              "#00BFA5",
   };
 
@@ -464,7 +464,7 @@ function CellLandingModal({ cell, ownerName, isMine, onClose }: {
     tnc:               { bg: "rgba(30,144,255,0.25)",  text: "#70B8FF" },
     vietnam:           { bg: "rgba(0,200,83,0.25)",    text: "#40E090" },
     crisis:            { bg: "rgba(255,23,68,0.3)",    text: "#FF7090" },
-    start:             { bg: "rgba(255,215,64,0.25)",  text: "#FFE080" },
+    start:             { bg: "rgba(232,185,35,0.25)",  text: "#f0cf6b" },
     free:              { bg: "rgba(0,191,165,0.25)",   text: "#60E0D0" },
   };
 
@@ -509,7 +509,7 @@ function CellLandingModal({ cell, ownerName, isMine, onClose }: {
         {cell.ownable && (
           <div
             className="mx-5 mb-3 rounded-xl p-3 space-y-1.5"
-            style={{ background: "rgba(0,0,0,0.38)", border: "1px solid rgba(255,215,64,0.2)" }}
+            style={{ background: "rgba(0,0,0,0.38)", border: "1px solid rgba(232,185,35,0.2)" }}
           >
             <p className="text-[10px] font-bold uppercase tracking-widest mb-1"
               style={{ color: "var(--gold-400)" }}>
@@ -622,7 +622,7 @@ function CellLandingModal({ cell, ownerName, isMine, onClose }: {
           className="mx-5 mb-4 rounded-xl p-3.5"
           style={{
             background: "rgba(0,0,0,0.22)",
-            borderLeft: "3px solid rgba(255,215,64,0.5)",
+            borderLeft: "3px solid rgba(232,185,35,0.5)",
             border: "1px solid rgba(255,255,255,0.06)",
           }}
         >
@@ -972,8 +972,8 @@ function QuizModal({ quiz, myPlayerId, playerName, onAnswer }: {
         className="animate-modal-entrance w-full max-w-md rounded-2xl overflow-hidden"
         style={{
           background: "linear-gradient(160deg, #241800 0%, #140D00 100%)",
-          border: "1.5px solid rgba(255,215,64,0.45)",
-          boxShadow: "0 0 0 1px rgba(255,255,255,0.04), 0 24px 70px rgba(0,0,0,0.85), 0 0 60px rgba(255,215,64,0.12)",
+          border: "1.5px solid rgba(232,185,35,0.45)",
+          boxShadow: "0 0 0 1px rgba(255,255,255,0.04), 0 24px 70px rgba(0,0,0,0.85), 0 0 60px rgba(232,185,35,0.12)",
         }}
       >
         {/* Header */}
@@ -986,7 +986,7 @@ function QuizModal({ quiz, myPlayerId, playerName, onAnswer }: {
           </div>
           <div
             className="rounded-xl px-4 py-3 mb-3"
-            style={{ background: "rgba(255,215,64,0.08)", border: "1px solid rgba(255,215,64,0.2)" }}
+            style={{ background: "rgba(232,185,35,0.08)", border: "1px solid rgba(232,185,35,0.2)" }}
           >
             <p className="font-bold text-sm mb-1" style={{ color: "var(--gold-300)" }}>
               📍 {quiz.cellName}
@@ -1013,7 +1013,7 @@ function QuizModal({ quiz, myPlayerId, playerName, onAnswer }: {
                   disabled={selected !== null}
                   className="w-full text-left px-4 py-3 rounded-xl text-sm transition-all flex gap-2"
                   style={{
-                    background: isChosen ? "rgba(255,215,64,0.15)" : "rgba(255,255,255,0.04)",
+                    background: isChosen ? "rgba(232,185,35,0.15)" : "rgba(255,255,255,0.04)",
                     border: `1.5px solid ${isChosen ? "var(--gold-400)" : "rgba(255,255,255,0.1)"}`,
                     color: isDisabled ? "rgba(139,163,204,0.4)" : "var(--text-primary)",
                     cursor: selected !== null ? "not-allowed" : "pointer",
@@ -1100,15 +1100,15 @@ function RulesModal({ onClose }: { onClose: () => void }) {
       <div
         className="animate-modal-entrance w-full max-w-2xl max-h-[85vh] flex flex-col rounded-2xl overflow-hidden"
         style={{
-          background: "linear-gradient(160deg, #0D1A30 0%, #060E1C 100%)",
-          border: "1.5px solid rgba(255,215,64,0.3)",
+          background: "linear-gradient(160deg, #241a14 0%, #17100e 100%)",
+          border: "1.5px solid rgba(232,185,35,0.3)",
           boxShadow: "0 0 0 1px rgba(255,255,255,0.04), 0 28px 80px rgba(0,0,0,0.9)",
         }}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 flex-shrink-0"
-          style={{ borderBottom: "1px solid rgba(255,215,64,0.15)" }}>
+          style={{ borderBottom: "1px solid rgba(232,185,35,0.15)" }}>
           <div>
             <h2 className="text-gold-static font-bold text-xl" style={{ fontFamily: "var(--font-display)" }}>
               📖 Luật Chơi
@@ -1134,11 +1134,11 @@ function RulesModal({ onClose }: { onClose: () => void }) {
             <h3 className="font-bold mb-2 text-base" style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>
               🏆 Điểm Số
             </h3>
-            <div className="rounded-xl px-4 py-3" style={{ background: "rgba(255,215,64,0.07)", border: "1px solid rgba(255,215,64,0.2)" }}>
+            <div className="rounded-xl px-4 py-3" style={{ background: "rgba(232,185,35,0.07)", border: "1px solid rgba(232,185,35,0.2)" }}>
               <p className="font-bold text-center text-base" style={{ color: "var(--gold-400)", fontFamily: "var(--font-code)" }}>
                 Điểm = Tiền + Giá trị tài sản đã thâu tóm + Tự chủ×10 + Quyền lực mềm×5
               </p>
-              <p className="text-center text-xs mt-1.5" style={{ color: "rgba(255,215,64,0.6)" }}>
+              <p className="text-center text-xs mt-1.5" style={{ color: "rgba(232,185,35,0.6)" }}>
                 Tự chủ = 0 → thua ngay lập tức, dù nhiều tiền/tài sản nhất
               </p>
             </div>
@@ -1192,7 +1192,7 @@ function RulesModal({ onClose }: { onClose: () => void }) {
                 <div key={step} className="flex gap-3 items-start px-3 py-2 rounded-lg"
                   style={{ background: "rgba(255,255,255,0.03)" }}>
                   <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold mt-0.5"
-                    style={{ background: "rgba(255,215,64,0.15)", color: "var(--gold-400)" }}>
+                    style={{ background: "rgba(232,185,35,0.15)", color: "var(--gold-400)" }}>
                     {step}
                   </span>
                   <div>
@@ -1217,7 +1217,7 @@ function RulesModal({ onClose }: { onClose: () => void }) {
                 ["#1E90FF", "🔵 TNC — Công ty xuyên QG (×8, sở hữu được)", "Chưa chủ: quiz để mua. Có chủ: trả phí thuê."],
                 ["#00C853", "🟢 Việt Nam (×8)", "Việt Nam rút thẻ tốt. Khác: hiệu ứng thường."],
                 ["#FF1744", "⚫ Khủng hoảng (×3)", "Tất cả mất tiền. Nước ĐPT mất 120%."],
-                ["#FFD740", "⭐ Xuất phát (ô 0)", "Đi qua → nhận +$200."],
+                ["#e8b923", "⭐ Xuất phát (ô 0)", "Đi qua → nhận +$200."],
                 ["#00BFA5", "⬜ Tự do (ô 10) / Cơ hội (ô 39)", "Tự do: không có gì. Cơ hội: rút thẻ ngẫu nhiên."],
               ].map(([color, label, desc]) => (
                 <div key={label} className="rounded-lg px-2.5 py-2"
@@ -1235,7 +1235,7 @@ function RulesModal({ onClose }: { onClose: () => void }) {
               🏭 Thâu Tóm &amp; Phí Thuê (Ô Đỏ/Cam/Xanh Dương)
             </h3>
             <div className="rounded-xl px-3 py-2.5 text-xs space-y-1.5"
-              style={{ background: "rgba(255,215,64,0.06)", border: "1px solid rgba(255,215,64,0.2)" }}>
+              style={{ background: "rgba(232,185,35,0.06)", border: "1px solid rgba(232,185,35,0.2)" }}>
               <p style={{ color: "var(--text-primary)" }}>21 ô (Tư bản tài chính / Tập đoàn / TNC) có thể mua được:</p>
               <p>• <strong style={{ color: "var(--gold-300)" }}>Chưa có chủ</strong> → hiện câu hỏi kiến thức Chương 4. Trả lời đúng + đủ tiền → <strong style={{ color: "#40E090" }}>thâu tóm</strong> ô đó (trở thành chủ).</p>
               <p>• Trả lời <strong style={{ color: "#FF6B7A" }}>sai</strong> → mất $30 chi phí cơ hội và −10 Tự chủ.</p>
@@ -1331,7 +1331,7 @@ function GameOverModal({
   // Players eliminated by autonomy reaching 0
   const eliminated = players.filter(p => !p.isActive || p.autonomy <= 0);
 
-  const medalColors = ["#FFD740", "#C0C0C0", "#CD7F32"];
+  const medalColors = ["#e8b923", "#C0C0C0", "#CD7F32"];
   const medals = ["🥇", "🥈", "🥉"];
 
   return (
@@ -1342,12 +1342,12 @@ function GameOverModal({
       <div
         className="animate-modal-entrance w-full max-w-md rounded-2xl overflow-hidden"
         style={{
-          background: "linear-gradient(160deg, #0D1A30 0%, #060E1C 100%)",
-          border: "1.5px solid rgba(255,215,64,0.35)",
+          background: "linear-gradient(160deg, #241a14 0%, #17100e 100%)",
+          border: "1.5px solid rgba(232,185,35,0.35)",
           boxShadow:
             "0 0 0 1px rgba(255,255,255,0.04), " +
             "0 28px 80px rgba(0,0,0,0.9), " +
-            "0 0 80px rgba(255,215,64,0.08)",
+            "0 0 80px rgba(232,185,35,0.08)",
         }}
       >
         {/* Header */}
@@ -1388,10 +1388,10 @@ function GameOverModal({
                 className="flex items-center gap-3 px-4 py-3 rounded-xl"
                 style={{
                   background: i === 0
-                    ? "rgba(255,215,64,0.08)"
+                    ? "rgba(232,185,35,0.08)"
                     : "rgba(255,255,255,0.03)",
                   border: `1px solid ${
-                    i === 0 ? "rgba(255,215,64,0.25)"
+                    i === 0 ? "rgba(232,185,35,0.25)"
                     : "rgba(255,255,255,0.06)"
                   }`,
                   borderLeft: `3px solid ${medalColors[i] ?? "rgba(255,255,255,0.1)"}`,
@@ -1462,13 +1462,13 @@ function GameOverModal({
           onClick={onClose}
           className="w-full py-4 font-bold text-base transition-all"
           style={{
-            background: "rgba(255,215,64,0.08)",
-            borderTop: "1px solid rgba(255,215,64,0.2)",
+            background: "rgba(232,185,35,0.08)",
+            borderTop: "1px solid rgba(232,185,35,0.2)",
             color: "var(--gold-300)",
             fontFamily: "var(--font-display)",
           }}
-          onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,215,64,0.15)"}
-          onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,215,64,0.08)"}
+          onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = "rgba(232,185,35,0.15)"}
+          onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = "rgba(232,185,35,0.08)"}
         >
           Xem Bảng Chi Tiết ↓
         </button>
@@ -1793,16 +1793,16 @@ export default function RoomPage() {
 
       {/* ── Top bar ── */}
       <div
-        className="flex-shrink-0 px-4 py-2.5 flex items-center justify-between"
+        className="flex-shrink-0 px-5 py-3 flex items-center justify-between"
         style={{
-          background: "rgba(5,10,20,0.95)",
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          background: "rgba(23,16,14,0.95)",
+          borderBottom: "1px solid var(--border-subtle)",
           backdropFilter: "blur(12px)",
         }}
       >
         <div className="flex items-center gap-4">
           <span
-            className="text-gold-static font-bold text-base"
+            className="text-gold-static font-bold text-lg"
             style={{ fontFamily: "var(--font-display)" }}
           >
             ♔ Cờ Tỷ Phú Toàn Cầu
@@ -1816,7 +1816,7 @@ export default function RoomPage() {
           {/* Player name chip */}
           {myPlayer && (
             <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full"
-              style={{ background: "rgba(255,215,64,0.08)", border: "1px solid rgba(255,215,64,0.2)" }}>
+              style={{ background: "rgba(232,185,35,0.08)", border: "1px solid rgba(232,185,35,0.2)" }}>
               <div className={`w-2 h-2 rounded-full flex-shrink-0 ${tokenColors[myPlayer.id] ?? "bg-yellow-400"}`} />
               <span className="text-xs font-semibold" style={{ color: "var(--gold-400)", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {myPlayer.name}
@@ -1829,12 +1829,12 @@ export default function RoomPage() {
             onClick={() => setShowRules(true)}
             className="px-3 py-1 rounded-lg text-xs font-medium transition-all hidden sm:block"
             style={{
-              border: "1px solid rgba(255,215,64,0.3)",
+              border: "1px solid rgba(232,185,35,0.3)",
               color: "var(--gold-400)",
               background: "transparent",
               cursor: "pointer",
             }}
-            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,215,64,0.1)"}
+            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = "rgba(232,185,35,0.1)"}
             onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = "transparent"}
           >
             📖 Luật chơi
@@ -1927,7 +1927,7 @@ export default function RoomPage() {
               className="rounded-2xl p-4 text-center space-y-3"
               style={{
                 background: "var(--bg-surface-1)",
-                border: "1px solid rgba(255,215,64,0.2)",
+                border: "1px solid rgba(232,185,35,0.2)",
               }}
             >
               <div>
@@ -1970,8 +1970,8 @@ export default function RoomPage() {
               <div
                 className="rounded-2xl p-4"
                 style={{
-                  background: "rgba(255,215,64,0.06)",
-                  border: "1px solid rgba(255,215,64,0.25)",
+                  background: "rgba(232,185,35,0.06)",
+                  border: "1px solid rgba(232,185,35,0.25)",
                 }}
               >
                 <h3 className="font-bold mb-2 text-sm" style={{ color: "var(--gold-300)", fontFamily: "var(--font-display)" }}>
@@ -2033,12 +2033,12 @@ export default function RoomPage() {
                 : room.phase === "voting"
                 ? "rgba(180,79,255,0.1)"
                 : room.phase === "quiz"
-                ? "rgba(255,215,64,0.1)"
+                ? "rgba(232,185,35,0.1)"
                 : "rgba(255,255,255,0.03)",
               border: `1px solid ${
                 room.phase === "playing" && isMyTurn ? "rgba(0,200,83,0.3)"
                 : room.phase === "voting" ? "rgba(180,79,255,0.3)"
-                : room.phase === "quiz" ? "rgba(255,215,64,0.3)"
+                : room.phase === "quiz" ? "rgba(232,185,35,0.3)"
                 : "rgba(255,255,255,0.06)"
               }`,
             }}
@@ -2087,12 +2087,12 @@ export default function RoomPage() {
                 maxHeight: "800px",
                 maxWidth: "800px",
                 width: "auto",
-                border: "3px solid #C8A840",
+                border: "3px solid #b98d16",
                 boxShadow:
-                  "inset 0 0 0 1px #FF8F0040, " +
+                  "inset 0 0 0 1px #96700f40, " +
                   "0 20px 80px rgba(0,0,0,0.85), " +
-                  "0 0 60px rgba(255,215,64,0.06)",
-                background: "#0B1628",
+                  "0 0 60px rgba(232,185,35,0.06)",
+                background: "var(--bg-board)",
               }}
             >
               {BOARD_CELLS.map((cell, i) => (
@@ -2116,7 +2116,7 @@ export default function RoomPage() {
                 style={{
                   gridRow: "2 / 11",
                   gridColumn: "2 / 11",
-                  background: "linear-gradient(160deg, #0A1A30 0%, #071020 100%)",
+                  background: "linear-gradient(160deg, #241a14 0%, #17100e 100%)",
                 }}
               >
                 {/* Title */}
@@ -2316,7 +2316,7 @@ export default function RoomPage() {
                       <div className="mt-2 space-y-1">
                         <div className="flex flex-wrap gap-1">
                           <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
-                            style={{ background: "rgba(255,215,64,0.12)", color: "var(--gold-300)", fontFamily: "var(--font-code)" }}>
+                            style={{ background: "rgba(232,185,35,0.12)", color: "var(--gold-300)", fontFamily: "var(--font-code)" }}>
                             💰 Giá ${curCell.price}
                           </span>
                           <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
@@ -2369,7 +2369,7 @@ export default function RoomPage() {
                           </span>
                         )}
                         {fx.drawCard    && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
-                          style={{ background: "rgba(255,215,64,0.12)", color: "var(--gold-300)" }}>🃏 Rút thẻ</span>}
+                          style={{ background: "rgba(232,185,35,0.12)", color: "var(--gold-300)" }}>🃏 Rút thẻ</span>}
                         {fx.councilVote && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
                           style={{ background: "rgba(180,79,255,0.12)", color: "#CE93D8" }}>🗳️ Biểu quyết</span>}
                         {fx.allPlayers  && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
@@ -2440,8 +2440,8 @@ export default function RoomPage() {
                   key={p.id}
                   className="flex items-center gap-2 text-xs py-1 px-2 rounded-lg"
                   style={{
-                    background: i === 0 ? "rgba(255,215,64,0.06)" : "transparent",
-                    borderLeft: i === 0 ? "2px solid rgba(255,215,64,0.4)" : "2px solid transparent",
+                    background: i === 0 ? "rgba(232,185,35,0.06)" : "transparent",
+                    borderLeft: i === 0 ? "2px solid rgba(232,185,35,0.4)" : "2px solid transparent",
                   }}
                 >
                   <span style={{ color: i === 0 ? "var(--gold-300)" : i === 1 ? "#C0C0C0" : i === 2 ? "#CD7F32" : "var(--text-secondary)" }}>

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useGameSocket } from "@/hooks/useGameSocket";
 import type { PlayerRole } from "@/types/game";
+import SiteNav from "@/components/SiteNav";
 
 const ROLE_OPTIONS: { value: PlayerRole; label: string; desc: string; icon: string; accent: string; border: string }[] = [
   {
@@ -36,9 +37,9 @@ const ROLE_OPTIONS: { value: PlayerRole; label: string; desc: string; icon: stri
 function FloatingSvgCoin({ className }: { className: string }) {
   return (
     <svg className={className} width="44" height="44" viewBox="0 0 44 44" fill="none">
-      <circle cx="22" cy="22" r="20" fill="rgba(255,215,64,0.12)" stroke="rgba(255,215,64,0.35)" strokeWidth="2"/>
-      <circle cx="22" cy="22" r="14" fill="rgba(255,215,64,0.08)" stroke="rgba(255,215,64,0.2)" strokeWidth="1"/>
-      <text x="22" y="27" textAnchor="middle" fill="rgba(255,215,64,0.5)" fontSize="14" fontWeight="bold">$</text>
+      <circle cx="22" cy="22" r="20" fill="rgba(232,185,35,0.12)" stroke="rgba(232,185,35,0.35)" strokeWidth="2"/>
+      <circle cx="22" cy="22" r="14" fill="rgba(232,185,35,0.08)" stroke="rgba(232,185,35,0.2)" strokeWidth="1"/>
+      <text x="22" y="27" textAnchor="middle" fill="rgba(232,185,35,0.5)" fontSize="14" fontWeight="bold">$</text>
     </svg>
   );
 }
@@ -46,10 +47,10 @@ function FloatingSvgCoin({ className }: { className: string }) {
 function FloatingSvgDice({ className }: { className: string }) {
   return (
     <svg className={className} width="36" height="36" viewBox="0 0 36 36" fill="none">
-      <rect x="2" y="2" width="32" height="32" rx="7" fill="rgba(255,215,64,0.08)" stroke="rgba(255,215,64,0.3)" strokeWidth="1.5"/>
-      <circle cx="10" cy="10" r="2.5" fill="rgba(255,215,64,0.4)"/>
-      <circle cx="26" cy="26" r="2.5" fill="rgba(255,215,64,0.4)"/>
-      <circle cx="18" cy="18" r="2.5" fill="rgba(255,215,64,0.4)"/>
+      <rect x="2" y="2" width="32" height="32" rx="7" fill="rgba(232,185,35,0.08)" stroke="rgba(232,185,35,0.3)" strokeWidth="1.5"/>
+      <circle cx="10" cy="10" r="2.5" fill="rgba(232,185,35,0.4)"/>
+      <circle cx="26" cy="26" r="2.5" fill="rgba(232,185,35,0.4)"/>
+      <circle cx="18" cy="18" r="2.5" fill="rgba(232,185,35,0.4)"/>
     </svg>
   );
 }
@@ -58,7 +59,7 @@ function FloatingSvgStar({ className }: { className: string }) {
   return (
     <svg className={className} width="32" height="32" viewBox="0 0 32 32" fill="none">
       <path d="M16 2l3.4 7.6 8.1.7-6 5.5 1.8 8-7.3-4.3-7.3 4.3 1.8-8-6-5.5 8.1-.7z"
-        fill="rgba(255,215,64,0.15)" stroke="rgba(255,215,64,0.35)" strokeWidth="1.2" strokeLinejoin="round"/>
+        fill="rgba(232,185,35,0.15)" stroke="rgba(232,185,35,0.35)" strokeWidth="1.2" strokeLinejoin="round"/>
     </svg>
   );
 }
@@ -89,9 +90,11 @@ export default function Home() {
   };
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
-      style={{ background: "radial-gradient(ellipse at 50% 40%, #0D1F3A 0%, #050A14 70%)" }}
+    <>
+      <SiteNav />
+      <div
+      className="min-h-screen flex items-center justify-center p-4 pt-24 relative overflow-hidden"
+      style={{ background: "radial-gradient(ellipse at 50% 40%, #2a1710 0%, #17100e 70%)" }}
     >
       {/* Floating decoration elements */}
       <FloatingSvgCoin className="absolute top-[12%] left-[8%] animate-float pointer-events-none" />
@@ -130,7 +133,7 @@ export default function Home() {
 
         {/* Main card */}
         <div className="game-card p-6"
-          style={{ border: "1px solid rgba(255,215,64,0.14)" }}>
+          style={{ border: "1px solid rgba(232,185,35,0.14)" }}>
 
           {/* ── MENU MODE ── */}
           {mode === "menu" && (
@@ -146,12 +149,12 @@ export default function Home() {
                 className="w-full py-4 rounded-[14px] font-bold text-base transition-all"
                 style={{
                   background: "transparent",
-                  border: "1.5px solid rgba(255,215,64,0.35)",
+                  border: "1.5px solid rgba(232,185,35,0.35)",
                   color: "var(--gold-400)",
                   fontFamily: "var(--font-display)",
                 }}
                 onMouseEnter={e => {
-                  (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,215,64,0.08)";
+                  (e.currentTarget as HTMLButtonElement).style.background = "rgba(232,185,35,0.08)";
                 }}
                 onMouseLeave={e => {
                   (e.currentTarget as HTMLButtonElement).style.background = "transparent";
@@ -200,8 +203,8 @@ export default function Home() {
                     fontFamily: "var(--font-ui)",
                   }}
                   onFocus={e => {
-                    e.currentTarget.style.borderColor = "rgba(255,215,64,0.5)";
-                    e.currentTarget.style.boxShadow = "0 0 0 3px rgba(255,215,64,0.12)";
+                    e.currentTarget.style.borderColor = "rgba(232,185,35,0.5)";
+                    e.currentTarget.style.boxShadow = "0 0 0 3px rgba(232,185,35,0.12)";
                   }}
                   onBlur={e => {
                     e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
@@ -232,8 +235,8 @@ export default function Home() {
                       fontWeight: 700,
                     }}
                     onFocus={e => {
-                      e.currentTarget.style.borderColor = "rgba(255,215,64,0.5)";
-                      e.currentTarget.style.boxShadow = "0 0 0 3px rgba(255,215,64,0.12)";
+                      e.currentTarget.style.borderColor = "rgba(232,185,35,0.5)";
+                      e.currentTarget.style.boxShadow = "0 0 0 3px rgba(232,185,35,0.12)";
                     }}
                     onBlur={e => {
                       e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
@@ -317,6 +320,7 @@ export default function Home() {
           )}
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
