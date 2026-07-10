@@ -1,5 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;0,700;1,500&family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,500;1,600&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -15,8 +15,8 @@
   --content-text:          #ece2d4;
   --content-text-secondary:#b7a693;
   --content-text-muted:    #8a7a68;
-  --font-content-serif:    'Lora', 'Georgia', serif;
-  --font-content-sans:     'Be Vietnam Pro', sans-serif;
+  --font-content-serif:    'Inter', sans-serif;
+  --font-content-sans:     'Inter', sans-serif;
 
   --bg-void:      #17100e;
   --bg-board:     #1f1611;
@@ -41,8 +41,8 @@
   --text-primary:   #ece2d4;
   --text-secondary: #b7a693;
 
-  --font-display: 'Lora', serif;
-  --font-ui:      'Be Vietnam Pro', sans-serif;
+  --font-display: 'Inter', sans-serif;
+  --font-ui:      'Inter', sans-serif;
   --font-code:    'JetBrains Mono', monospace;
 
   --background: var(--bg-void);

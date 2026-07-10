@@ -48,7 +48,7 @@ export default function SiteNav() {
   const isContent = pathname?.startsWith("/noi-dung");
 
   const pillStyle = (active: boolean) => ({
-    fontFamily: "var(--font-content-sans, 'Be Vietnam Pro', sans-serif)",
+    fontFamily: "var(--font-content-sans, 'Inter', sans-serif)",
     fontSize: "13px",
     fontWeight: 700,
     padding: "9px 18px",
@@ -79,7 +79,7 @@ export default function SiteNav() {
             <span
               className="block truncate"
               style={{
-                fontFamily: "var(--font-content-serif, 'Lora', serif)",
+                fontFamily: "var(--font-content-serif, 'Inter', sans-serif)",
                 fontSize: "17px",
                 fontWeight: 700,
                 color: "#ece2d4",
@@ -91,7 +91,7 @@ export default function SiteNav() {
             <span
               className="hidden sm:block"
               style={{
-                fontFamily: "var(--font-content-sans, 'Be Vietnam Pro', sans-serif)",
+                fontFamily: "var(--font-content-sans, 'Inter', sans-serif)",
                 fontSize: "10.5px",
                 fontWeight: 700,
                 letterSpacing: "0.18em",
