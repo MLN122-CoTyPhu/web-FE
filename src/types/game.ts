@@ -61,6 +61,7 @@ export interface QuizSession {
   question: string;
   options: string[];
   price: number;
+  expiresAt: number;  // epoch ms — hết giờ trả lời (15s)
 }
 
 export interface QuizResult {
@@ -153,6 +154,7 @@ export interface ClientToServerEvents {
   roll_dice: () => void;
   cast_vote: (data: { optionIndex: number }) => void;
   answer_quiz: (data: { optionIndex: number }) => void;
+  quiz_ready: () => void;
   end_turn: () => void;
   leave_room: () => void;
 }

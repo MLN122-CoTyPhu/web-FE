@@ -953,15 +953,34 @@ function VoteModal({ vote, onVote, totalPlayers }: {
 
 // ─── Quiz Modal (thâu tóm bằng câu hỏi) ──────────────────────────────────────
 
-function QuizModal({ quiz, myPlayerId, playerName, onAnswer }: {
+function QuizModal({ quiz, myPlayerId, playerName, onAnswer, onReady }: {
   quiz: QuizSession;
   myPlayerId: string | undefined;
   playerName: string;
   onAnswer: (i: number) => void;
+  onReady: () => void;
 }) {
   const [selected, setSelected] = useState<number | null>(null);
+  const [remaining, setRemaining] = useState(() => Math.max(0, Math.ceil((quiz.expiresAt - Date.now()) / 1000)));
   const isMe = quiz.playerId === myPlayerId;
   const letters = ["A", "B", "C", "D"];
+  const timeUp = remaining <= 0;
+  const urgent = remaining <= 5;
+
+  // Modal chỉ mount đúng lúc câu hỏi thật sự hiển thị cho người chơi (sau khi đã
+  // đóng modal thông tin ô) — báo cho server bắt đầu đếm 15s từ đây, không tính
+  // thời gian đọc phần giải thích trước đó.
+  useEffect(() => {
+    if (isMe) onReady();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const tick = () => setRemaining(Math.max(0, Math.ceil((quiz.expiresAt - Date.now()) / 1000)));
+    tick();
+    const iv = setInterval(tick, 250);
+    return () => clearInterval(iv);
+  }, [quiz.expiresAt]);
 
   return (
     <div
@@ -982,6 +1001,21 @@ function QuizModal({ quiz, myPlayerId, playerName, onAnswer }: {
             <span className="text-2xl">❓</span>
             <span className="font-bold text-sm uppercase tracking-widest" style={{ color: "var(--gold-400)" }}>
               Câu Hỏi Thâu Tóm
+            </span>
+            <span
+              className="ml-auto flex-shrink-0 flex items-center justify-center rounded-full font-bold"
+              style={{
+                width: "34px",
+                height: "34px",
+                fontSize: "13px",
+                fontFamily: "var(--font-code)",
+                color: urgent ? "#FF6B7A" : "var(--gold-300)",
+                border: `2px solid ${urgent ? "#FF3B3B" : "var(--gold-400)"}`,
+                background: urgent ? "rgba(255,23,68,0.12)" : "rgba(232,185,35,0.1)",
+                transition: "color 0.2s, border-color 0.2s, background 0.2s",
+              }}
+            >
+              {remaining}
             </span>
           </div>
           <div
@@ -1005,18 +1039,18 @@ function QuizModal({ quiz, myPlayerId, playerName, onAnswer }: {
           <div className="px-6 pb-4 space-y-2.5">
             {quiz.options.map((opt, i) => {
               const isChosen = selected === i;
-              const isDisabled = selected !== null && !isChosen;
+              const isDisabled = (selected !== null && !isChosen) || timeUp;
               return (
                 <button
                   key={i}
                   onClick={() => { setSelected(i); onAnswer(i); }}
-                  disabled={selected !== null}
+                  disabled={selected !== null || timeUp}
                   className="w-full text-left px-4 py-3 rounded-xl text-sm transition-all flex gap-2"
                   style={{
                     background: isChosen ? "rgba(232,185,35,0.15)" : "rgba(255,255,255,0.04)",
                     border: `1.5px solid ${isChosen ? "var(--gold-400)" : "rgba(255,255,255,0.1)"}`,
                     color: isDisabled ? "rgba(139,163,204,0.4)" : "var(--text-primary)",
-                    cursor: selected !== null ? "not-allowed" : "pointer",
+                    cursor: selected !== null || timeUp ? "not-allowed" : "pointer",
                     opacity: isDisabled ? 0.5 : 1,
                   }}
                 >
@@ -1025,11 +1059,16 @@ function QuizModal({ quiz, myPlayerId, playerName, onAnswer }: {
                 </button>
               );
             })}
+            {timeUp && selected === null && (
+              <p className="text-center text-xs" style={{ color: "#FF6B7A" }}>
+                ⏰ Hết giờ trả lời — đang xử lý kết quả...
+              </p>
+            )}
           </div>
         ) : (
           <div className="px-6 pb-5">
             <p className="text-center text-sm py-3 animate-pulse" style={{ color: "var(--text-secondary)" }}>
-              ⏳ Đang chờ <strong className="text-white">{playerName}</strong> trả lời...
+              ⏳ Đang chờ <strong className="text-white">{playerName}</strong> trả lời... ({remaining}s)
             </p>
           </div>
         )}
@@ -1485,7 +1524,7 @@ export default function RoomPage() {
   const roomCode = (params.id as string)?.toUpperCase();
   const {
     socket, room, lastCard, voteSession, quizSession, lastQuizResult, diceAnimation, isRolling,
-    startGame, rollDice, castVote, answerQuiz, endTurn, dismissCard, dismissQuizResult, leaveRoom, isConnected,
+    startGame, rollDice, castVote, answerQuiz, quizReady, endTurn, dismissCard, dismissQuizResult, leaveRoom, isConnected,
   } = useGameSocket();
   const logRef = useRef<HTMLDivElement>(null);
   const preRollPlayersRef = useRef<Player[]>([]);
@@ -1727,7 +1766,7 @@ export default function RoomPage() {
         <CardModal card={capturedCard} onClose={handleDismissCard} />
       )}
       {!showGameOver && !landingCell && !pendingMove && turnHasAnimated && !capturedCard && quizSession && (
-        <QuizModal quiz={quizSession} myPlayerId={myPlayer?.id} playerName={quizOwnerName} onAnswer={answerQuiz} />
+        <QuizModal quiz={quizSession} myPlayerId={myPlayer?.id} playerName={quizOwnerName} onAnswer={answerQuiz} onReady={quizReady} />
       )}
       {!showGameOver && !landingCell && !pendingMove && !quizSession && lastQuizResult && (
         <QuizResultModal result={lastQuizResult} onClose={dismissQuizResult} />

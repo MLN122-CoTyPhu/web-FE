@@ -23,6 +23,7 @@ interface UseGameSocketReturn {
   rollDice: () => void;
   castVote: (optionIndex: number) => void;
   answerQuiz: (optionIndex: number) => void;
+  quizReady: () => void;
   endTurn: () => void;
   dismissCard: () => void;
   dismissQuizResult: () => void;
@@ -156,6 +157,10 @@ export function useGameSocket(): UseGameSocketReturn {
     socketRef.current?.emit("answer_quiz", { optionIndex });
   }, []);
 
+  const quizReady = useCallback(() => {
+    socketRef.current?.emit("quiz_ready");
+  }, []);
+
   const dismissQuizResult = useCallback(() => {
     setLastQuizResult(null);
   }, []);
@@ -191,6 +196,7 @@ export function useGameSocket(): UseGameSocketReturn {
     rollDice,
     castVote,
     answerQuiz,
+    quizReady,
     endTurn,
     dismissCard,
     dismissQuizResult,
