@@ -8,7 +8,7 @@ import RefreshButton from "@/components/RefreshButton";
 
 const ROLE_LABEL: Record<string, string> = {
   developing_country: "🌏 Nước đang phát triển",
-  vietnam: "🇻🇳 Việt Nam",
+  vietnam: "Việt Nam",
   financial_capital: "💰 Tư bản tài chính",
 };
 

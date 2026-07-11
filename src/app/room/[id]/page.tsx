@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useGameSocket } from "@/hooks/useGameSocket";
 import { BOARD_CELLS, CELL_COLORS, CELL_TYPE_LABELS, type BoardCellFull } from "@/data/boardData";
 import type { Player, EventCard, VoteSession, QuizSession, QuizResult, PlayerRole } from "@/types/game";
+import { RulesModal } from "@/components/GameRulesModal";
 
 // ─── Score helpers ───────────────────────────────────────────────────────────
 // Điểm = Tiền + Giá trị tài sản đã thâu tóm + Tự chủ×10 + Quyền lực mềm×5
@@ -69,17 +70,34 @@ const CELL_POSITIONS: Array<{ row: number; col: number }> = [
 
 const CORNER_IDS = new Set([0, 10, 20, 30]);
 
-// Property strip colors by cell type
+// Thanh 4px ở mép trên mỗi ô — dấu hiệu loại ô, dùng cùng mã hex "border"
+// trong CELL_COLORS (boardData.ts) để đồng bộ tông màu.
 const STRIP_COLORS: Record<string, string> = {
-  financial_capital: "#FF3B3B",
-  conglomerate:      "#FF8C00",
-  consortium:        "#B44FFF",
-  tnc:               "#1E90FF",
-  vietnam:           "#00C853",
-  crisis:            "#FF1744",
-  start:             "#e8b923",
-  free:              "#00BFA5",
+  financial_capital: "#a02820",
+  conglomerate:      "#b0621a",
+  consortium:        "#7a3d94",
+  tnc:               "#2f5f95",
+  vietnam:           "#1f7a45",
+  crisis:            "#8a1a12",
+  start:             "#d4af1f",
+  free:              "#5a6474",
 };
+
+// Nhãn hiệu ứng ngắn gọn hiện dưới tên ô (vd "+$200", "−$60", "🃏") — giúp
+// người chơi ước lượng nhanh hậu quả khi dừng chân mà không cần bấm vào ô.
+function cellEffectLabel(cell: typeof BOARD_CELLS[0]): string | null {
+  if (cell.ownable) return `−$${cell.rent}`;
+  const fx = cell.effect;
+  if (fx.money)      return `${fx.money > 0 ? "+" : "−"}$${Math.abs(fx.money)}`;
+  if (cell.type === "crisis") return "−10%";
+  if (fx.autonomy)    return `${fx.autonomy > 0 ? "+" : "−"}${Math.abs(fx.autonomy)} 🏛`;
+  if (fx.softPower)   return `${fx.softPower > 0 ? "+" : "−"}${Math.abs(fx.softPower)} ⭐`;
+  if (fx.skipTurns)   return "🚧";
+  if (fx.drawCard)    return "🃏";
+  if (fx.councilVote) return "🗳️";
+  return null;
+}
+
 
 // Dice dot patterns: 3×3 grid (row-major), true = show dot
 const DICE_DOTS: Record<number, boolean[]> = {
@@ -93,6 +111,56 @@ const DICE_DOTS: Record<number, boolean[]> = {
 };
 
 // ─── Small components ─────────────────────────────────────────────────────────
+
+// Unified line-icon set for the 3 core stats (Tiền / Tự chủ / Sức mạnh).
+// Different platforms render emoji with wildly inconsistent style/weight/color
+// (💰⭐ come out flat and colorful, 🏛️ renders monochrome on many systems) —
+// using matching stroke-based SVGs that inherit currentColor keeps all three
+// looking like one coherent icon set everywhere they're shown together.
+function MoneyIcon({ size = 11 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" style={{ display: "inline-block", verticalAlign: "-1.5px", flexShrink: 0 }}>
+      <circle cx="8" cy="8" r="6.3" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M8 4.6v6.8M9.9 6.2c0-.85-.85-1.5-1.9-1.5s-1.9.58-1.9 1.4c0 .78.68 1.05 1.9 1.35c1.22.3 1.9.62 1.9 1.4c0 .85-.85 1.4-1.9 1.4s-1.9-.55-1.9-1.45"
+        stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
+    </svg>
+  );
+}
+function AutonomyIcon({ size = 11 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" style={{ display: "inline-block", verticalAlign: "-1.5px", flexShrink: 0 }}>
+      <path d="M8 1.4l5.3 1.9v3.7c0 3.5-2.2 6.1-5.3 7c-3.1-.9-5.3-3.5-5.3-7V3.3z"
+        stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function PowerIcon({ size = 11 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="currentColor" style={{ display: "inline-block", verticalAlign: "-1.5px", flexShrink: 0 }}>
+      <path d="M8 1.1l1.98 4.26 4.6.54-3.44 3.18.92 4.56L8 11.5l-4.06 2.14.92-4.56-3.44-3.18 4.6-.54z" />
+    </svg>
+  );
+}
+
+// Windows renders the 🇻🇳 flag emoji as raw "VN" letters (no flag glyph in the
+// default font), while 💰/🌏 render fine everywhere. Draw the flag as inline
+// SVG instead so the "Việt Nam" role always shows an actual flag icon.
+function VietnamFlagIcon({ size = 15 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size * (2 / 3)}
+      viewBox="0 0 30 20"
+      style={{ display: "block", borderRadius: 2, boxShadow: "0 0 0 1px rgba(0,0,0,0.25)" }}
+    >
+      <rect width="30" height="20" fill="#DA251D" />
+      <polygon
+        points="15,3 16.65,7.74 21.66,7.84 17.66,10.87 19.11,15.66 15,12.8 10.89,15.66 8.34,10.87 8.34,7.84 13.35,7.74"
+        fill="#FFCD00"
+      />
+    </svg>
+  );
+}
 
 function DiceFace({ value, rolling }: { value: number; rolling?: boolean }) {
   const clampedVal = Math.min(6, Math.max(0, value));
@@ -159,7 +227,7 @@ function PlayerPanel({
             boxShadow: `0 0 10px ${roleColor}28`,
           }}
         >
-          {player.role === "vietnam" ? "🇻🇳"
+          {player.role === "vietnam" ? <VietnamFlagIcon size={17} />
             : player.role === "financial_capital" ? "💰"
             : "🌏"}
         </div>
@@ -271,9 +339,75 @@ function PlayerPanel({
   );
 }
 
+// Compact leaderboard row — merges the old separate "player list" + "scoreboard"
+// panels into one, matching the reference layout (avatar · name+stats · score).
+function ScoreRow({
+  rank, player, score, isCurrent, isMe, tokenColor,
+}: {
+  rank: number; player: Player; score: number; isCurrent: boolean; isMe: boolean; tokenColor: string;
+}) {
+  const roleColor = ROLE_COLORS[player.role] ?? "#8BA3CC";
+  const medals = ["🥇", "🥈", "🥉"];
+  const isElim = player.autonomy <= 0;
+  return (
+    <div
+      className="flex items-center gap-2 px-2 py-2 rounded-xl transition-all"
+      style={{
+        background: isCurrent ? "rgba(232,185,35,0.08)" : "transparent",
+        border: `1px solid ${isCurrent ? "rgba(232,185,35,0.3)" : "transparent"}`,
+      }}
+    >
+      <span
+        className="text-xs w-5 text-center flex-shrink-0 font-bold"
+        style={{ color: rank > 3 ? "var(--text-secondary)" : undefined }}
+      >
+        {medals[rank - 1] ?? rank}
+      </span>
+      <div
+        className={`w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-[11px] ${tokenColor}`}
+        style={{ boxShadow: `0 0 0 1.5px ${roleColor}70` }}
+      >
+        {player.role === "vietnam" ? <VietnamFlagIcon size={14} /> : player.role === "financial_capital" ? "💰" : "🌏"}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div
+          className="flex items-center gap-1 text-xs font-bold truncate"
+          style={{ color: isCurrent ? "var(--gold-300)" : "var(--text-primary)", fontFamily: "var(--font-ui)" }}
+        >
+          <span className="truncate">{player.name}</span>
+          {isMe && <span className="text-[9px] font-normal flex-shrink-0" style={{ color: "var(--text-secondary)" }}>(bạn)</span>}
+          {isElim && <span className="text-[9px] flex-shrink-0" style={{ color: "#FF6B7A" }}>⚠</span>}
+        </div>
+        {/* Không dùng "truncate" (từng âm thầm cắt mất chỉ số Sức mạnh) lẫn
+            "flex-wrap" (xuống dòng nhìn lệch) — ép 1 hàng ngang cố định,
+            thu gọn khoảng cách + icon nhỏ hơn 1 chút để chắc chắn vừa trong
+            bề rộng sidebar. */}
+        <div className="text-[10px] flex items-center whitespace-nowrap gap-1" style={{ color: "var(--text-secondary)", fontFamily: "var(--font-code)" }}>
+          <span className="inline-flex items-center gap-0.5"><MoneyIcon size={8} />${player.money.toLocaleString()}</span>
+          <span className="inline-flex items-center gap-0.5"><AutonomyIcon size={8} />{player.autonomy}</span>
+          <span className="inline-flex items-center gap-0.5"><PowerIcon size={8} />{player.softPower}</span>
+        </div>
+      </div>
+      <div className="text-right flex-shrink-0">
+        <div
+          className="text-xs font-bold"
+          style={{ color: rank === 1 ? "var(--gold-400)" : "var(--text-secondary)", fontFamily: "var(--font-code)" }}
+        >
+          {score.toLocaleString()}
+        </div>
+        <div className="text-[9px]" style={{ color: "var(--text-secondary)" }}>điểm</div>
+      </div>
+    </div>
+  );
+}
+
+// Một kiểu ô duy nhất dùng chung cho cả 40 ô (kể cả 4 ô góc) — chỉ khác vị
+// trí lưới (grid-row/grid-column) theo CELL_POSITIONS. Theo đúng spec: bo góc
+// nhẹ, thanh màu 4px ở mép trên, nền trầm + viền cùng tông, tên viết tắt cỡ
+// chữ rất nhỏ, nhãn hiệu ứng ngắn gọn bên dưới tên, quân cờ xếp ở đáy ô.
 function BoardCell({
   cell, index, players, tokenColors, isMyPosition,
-  visualPositions, pendingPlayerId, onTokenClick, cellOwners,
+  visualPositions, pendingPlayerId, onTokenClick, cellOwners, onCellInfo,
 }: {
   cell: typeof BOARD_CELLS[0];
   index: number;
@@ -284,36 +418,31 @@ function BoardCell({
   pendingPlayerId: string | null;
   onTokenClick: () => void;
   cellOwners: Record<number, string>;
+  // Lets players click any cell — even ones they haven't landed on — to read
+  // its "Kiến thức Chương 4" explanation on demand, independent of the real
+  // game-flow landing modal / quiz (which still only fires on an actual roll).
+  onCellInfo: (cell: typeof BOARD_CELLS[0]) => void;
 }) {
   const ownerId = cell.ownable ? cellOwners[cell.id] : undefined;
   const ownerColor = ownerId ? (tokenColors[ownerId] ?? "bg-white") : undefined;
-  const pos     = CELL_POSITIONS[index];
-  const isLeft  = pos.col === 1  && pos.row !== 1 && pos.row !== 11;
-  const isRight = pos.col === 11 && pos.row !== 1 && pos.row !== 11;
-  const isCorner = CORNER_IDS.has(index);
-  const colors   = CELL_COLORS[cell.type] ?? CELL_COLORS.free;
-
+  const pos       = CELL_POSITIONS[index];
+  const isCorner  = CORNER_IDS.has(index);
+  const colors    = CELL_COLORS[cell.type] ?? CELL_COLORS.free;
   const stripColor = STRIP_COLORS[cell.type] ?? "#555";
-  const stripDir   = isCorner ? "" : (
-    pos.row === 11 ? "prop-strip-bottom" :
-    pos.row === 1  ? "prop-strip-top"    :
-    pos.col === 1  ? "prop-strip-left"   :
-    pos.col === 11 ? "prop-strip-right"  : ""
-  );
+  const effectLabel = cellEffectLabel(cell);
 
   const playersHere = players.filter(p => (visualPositions[p.id] ?? p.position) === index);
 
-  const emoji   = [...cell.name].slice(0, 2).join("").trim();
   const rawName = cell.name.replace(/^[\p{Emoji}\s]+/u, "").trim();
   const shortName = rawName.split(" — ")[0];
 
-  const baseClass = `border ${colors} relative flex select-none group
-    ${isMyPosition ? "ring-2 ring-white/60 ring-offset-1 ring-offset-[#17100e] z-10" : ""}
-    ${isCorner ? "items-center justify-center" : ""}
-  `;
+  const handleCellClick = () => onCellInfo(cell);
 
+  // Hàng trên cùng (row 1) nằm sát mép bàn cờ — tooltip bật lên phía trên như
+  // mặc định sẽ bị thanh tiêu đề phía trên board che mất. Lật xuống dưới ô
+  // riêng cho hàng này.
   const Tooltip = () => (
-    <div className="cell-tooltip">{cell.name}</div>
+    <div className={`cell-tooltip ${pos.row === 1 ? "cell-tooltip-below" : ""}`}>{cell.name}</div>
   );
 
   const TokenBadges = () => (
@@ -327,11 +456,11 @@ function BoardCell({
         return (
           <div
             key={p.id}
-            onClick={isPending ? onTokenClick : undefined}
+            onClick={isPending ? (e) => { e.stopPropagation(); onTokenClick(); } : undefined}
             title={isPending ? `${p.name} — Bấm để đi!` : p.name}
             className={`
-              w-5 h-5 rounded-full border-2 flex items-center justify-center
-              text-[7px] font-black text-white flex-shrink-0 transition-all
+              w-4 h-4 rounded-full border flex items-center justify-center
+              text-[8px] font-black text-white flex-shrink-0 transition-all
               ${tokenColors[p.id]}
               ${glowClass}
               ${isPending
@@ -346,89 +475,51 @@ function BoardCell({
     </>
   );
 
-  const OwnerMark = () => {
-    if (!cell.ownable) return null;
-    if (ownerId) {
-      return (
+  return (
+    <div
+      className={`border rounded-[5px] ${colors} relative select-none group cursor-pointer overflow-visible
+        ${isMyPosition ? "ring-2 ring-white/70 ring-offset-1 ring-offset-[#17100e] z-10 shadow-[0_0_14px_rgba(255,255,255,0.4)]" : ""}
+      `}
+      style={{ gridRow: pos.row, gridColumn: pos.col }}
+      onClick={handleCellClick}
+    >
+      <Tooltip />
+
+      {/* Thanh 4px mép trên — dấu hiệu loại ô */}
+      <div
+        className="absolute top-0 left-0 right-0 h-1 rounded-t-[4px]"
+        style={{ background: stripColor }}
+      />
+
+      {/* Chấm nhỏ đánh dấu chủ sở hữu (góc trên-trái) khi ô đã bị thâu tóm */}
+      {cell.ownable && ownerId && (
         <div
-          className={`absolute top-0.5 left-0.5 w-2.5 h-2.5 rounded-full border border-white/70 z-10 ${ownerColor}`}
+          className={`absolute top-1.5 left-1 w-1.5 h-1.5 rounded-full border border-white/70 z-10 ${ownerColor}`}
           title="Đã bị thâu tóm"
         />
-      );
-    }
-    return (
-      <div
-        className="absolute bottom-0 left-0 right-0 text-center leading-none pb-px"
-        style={{ color: "#e8b923", fontSize: "6px", fontWeight: 700 }}
-      >
-        ${cell.price}
-      </div>
-    );
-  };
+      )}
 
-  if (isCorner) {
-    return (
-      <div className={baseClass} style={{ gridRow: pos.row, gridColumn: pos.col }}>
-        <Tooltip />
-        <OwnerMark />
-        <div className="text-center p-1 flex flex-col items-center gap-0.5">
-          <div className="text-xl leading-none">{emoji}</div>
-          <div className="text-[10px] font-bold leading-tight line-clamp-2">{shortName}</div>
-          {playersHere.length > 0 && (
-            <div className="flex flex-wrap gap-0.5 justify-center mt-0.5">
-              <TokenBadges />
+      {/* absolute inset-0 + overflow-hidden clips long names to a fixed box
+          instead of pushing this grid cell taller than its neighbors —
+          Tooltip stays outside (sibling above) so its hover popup still
+          escapes the cell. */}
+      <div className="absolute inset-0 overflow-hidden flex flex-col items-center pt-2 pb-0.5 px-1">
+        <div className={`flex-1 min-h-0 flex flex-col items-center justify-center gap-0.5 w-full text-center ${isCorner ? "text-[11px] font-bold" : "text-[10px] font-semibold"}`}>
+          <div className="leading-tight line-clamp-2">{shortName}</div>
+          {effectLabel && (
+                  <div className="leading-none" style={{ fontSize: "7px", fontWeight: 800, opacity: 0.85 }}>
+
+              {effectLabel}
             </div>
           )}
         </div>
-      </div>
-    );
-  }
 
-  if (isLeft || isRight) {
-    return (
-      <div
-        className={`${baseClass} flex-col items-center justify-center`}
-        style={{ gridRow: pos.row, gridColumn: pos.col }}
-      >
-        <Tooltip />
-        <OwnerMark />
-        {stripDir && (
-          <div className={`prop-strip ${stripDir}`} style={{ background: stripColor }} />
-        )}
         {playersHere.length > 0 && (
-          <div className="absolute top-0.5 right-0.5 flex flex-col gap-0.5 z-10">
+          <div className="flex flex-wrap gap-0.5 justify-center flex-shrink-0 mt-0.5">
             <TokenBadges />
           </div>
         )}
-        <div className="text-[11px] leading-none mb-px">{emoji}</div>
-        <div className="text-[8px] font-medium text-center leading-tight px-0.5 break-words w-full line-clamp-4 overflow-hidden">
-          {shortName}
-        </div>
       </div>
-    );
-  }
-
-  const isBottom = pos.row === 11;
-  return (
-    <div
-      className={`${baseClass} flex-col justify-center items-center`}
-      style={{ gridRow: pos.row, gridColumn: pos.col }}
-    >
-      <Tooltip />
-      <OwnerMark />
-      {stripDir && (
-        <div className={`prop-strip ${stripDir}`} style={{ background: stripColor }} />
-      )}
-      <div className="text-[12px] leading-none">{emoji}</div>
-      <div className="text-[9px] font-medium text-center leading-tight px-0.5 line-clamp-3 w-full">
-        {shortName}
-      </div>
-      {playersHere.length > 0 && (
-        <div className={`absolute flex flex-wrap gap-0.5 justify-center
-          ${isBottom ? "top-1" : "bottom-1"} left-0 right-0 px-0.5`}>
-          <TokenBadges />
-        </div>
-      )}
     </div>
   );
 }
@@ -443,37 +534,39 @@ function CellLandingModal({ cell, ownerName, isMine, onClose }: {
 }) {
   const typeLabel = CELL_TYPE_LABELS[cell.type] ?? cell.type;
 
+  // Bộ màu trầm, tông đỏ cờ + vàng học thuật — đồng bộ với CELL_COLORS
+  // (boardData.ts), thay cho các màu neon cũ.
   const typeGradient: Record<string, string> = {
-    financial_capital: "linear-gradient(160deg, #3D0000 0%, #1A0000 100%)",
-    conglomerate:      "linear-gradient(160deg, #3D1A00 0%, #1A0C00 100%)",
-    consortium:        "linear-gradient(160deg, #1E0038 0%, #0D0020 100%)",
-    tnc:               "linear-gradient(160deg, #00204A 0%, #000F28 100%)",
-    vietnam:           "linear-gradient(160deg, #002800 0%, #001200 100%)",
-    crisis:            "linear-gradient(160deg, #3D0000 0%, #0D0000 100%)",
-    start:             "linear-gradient(160deg, #3A2800 0%, #1A1000 100%)",
-    free:              "linear-gradient(160deg, #1A2A3A 0%, #0A1220 100%)",
+    financial_capital: "linear-gradient(160deg, #5c1512 0%, #1a0605 100%)",
+    conglomerate:      "linear-gradient(160deg, #5c3410 0%, #1a0e04 100%)",
+    consortium:        "linear-gradient(160deg, #3d1f4d 0%, #140a19 100%)",
+    tnc:               "linear-gradient(160deg, #152b45 0%, #060d17 100%)",
+    vietnam:           "linear-gradient(160deg, #123821 0%, #06130b 100%)",
+    crisis:            "linear-gradient(160deg, #1a1310 0%, #0a0705 100%)",
+    start:             "linear-gradient(160deg, #5c4a10 0%, #1c1704 100%)",
+    free:              "linear-gradient(160deg, #2a2f38 0%, #0e1013 100%)",
   };
 
   const typeBorderColor: Record<string, string> = {
-    financial_capital: "#FF3B3B",
-    conglomerate:      "#FF8C00",
-    consortium:        "#B44FFF",
-    tnc:               "#1E90FF",
-    vietnam:           "#00C853",
-    crisis:            "#FF1744",
-    start:             "#e8b923",
-    free:              "#00BFA5",
+    financial_capital: "#a02820",
+    conglomerate:      "#b0621a",
+    consortium:        "#7a3d94",
+    tnc:               "#2f5f95",
+    vietnam:           "#1f7a45",
+    crisis:            "#8a1a12",
+    start:             "#d4af1f",
+    free:              "#5a6474",
   };
 
   const badgeColor: Record<string, { bg: string; text: string }> = {
-    financial_capital: { bg: "rgba(255,59,59,0.25)",   text: "#FF8080" },
-    conglomerate:      { bg: "rgba(255,140,0,0.25)",   text: "#FFA040" },
-    consortium:        { bg: "rgba(180,79,255,0.25)",  text: "#D090FF" },
-    tnc:               { bg: "rgba(30,144,255,0.25)",  text: "#70B8FF" },
-    vietnam:           { bg: "rgba(0,200,83,0.25)",    text: "#40E090" },
-    crisis:            { bg: "rgba(255,23,68,0.3)",    text: "#FF7090" },
-    start:             { bg: "rgba(232,185,35,0.25)",  text: "#f0cf6b" },
-    free:              { bg: "rgba(0,191,165,0.25)",   text: "#60E0D0" },
+    financial_capital: { bg: "rgba(160,40,32,0.28)",  text: "#ffd9d4" },
+    conglomerate:      { bg: "rgba(176,98,26,0.28)",  text: "#ffe3c2" },
+    consortium:        { bg: "rgba(122,61,148,0.28)", text: "#ecd2f7" },
+    tnc:               { bg: "rgba(47,95,149,0.28)",  text: "#cfe1f7" },
+    vietnam:           { bg: "rgba(31,122,69,0.28)",  text: "#c7f0d5" },
+    crisis:            { bg: "rgba(138,26,18,0.3)",   text: "#f0c6c0" },
+    start:             { bg: "rgba(212,175,31,0.28)", text: "#fff3c4" },
+    free:              { bg: "rgba(90,100,116,0.28)", text: "#dbe2ec" },
   };
 
   const bg   = typeGradient[cell.type]   ?? typeGradient.free;
@@ -559,7 +652,7 @@ function CellLandingModal({ cell, ownerName, isMine, onClose }: {
             </p>
             {fx.money !== undefined && (
               <div className="flex items-center justify-between">
-                <span className="text-sm" style={{ color: "rgba(200,216,240,0.9)" }}>💰 Tiền</span>
+                <span className="text-sm flex items-center gap-1.5" style={{ color: "rgba(200,216,240,0.9)" }}><MoneyIcon size={13} /> Tiền</span>
                 <span
                   className="text-sm font-bold px-3 py-0.5 rounded-full"
                   style={{
@@ -574,7 +667,7 @@ function CellLandingModal({ cell, ownerName, isMine, onClose }: {
             )}
             {fx.autonomy !== undefined && (
               <div className="flex items-center justify-between">
-                <span className="text-sm" style={{ color: "rgba(200,216,240,0.9)" }}>🏛️ Tự chủ</span>
+                <span className="text-sm flex items-center gap-1.5" style={{ color: "rgba(200,216,240,0.9)" }}><AutonomyIcon size={13} /> Tự chủ</span>
                 <span
                   className="text-sm font-bold px-3 py-0.5 rounded-full"
                   style={{
@@ -589,7 +682,7 @@ function CellLandingModal({ cell, ownerName, isMine, onClose }: {
             )}
             {fx.softPower !== undefined && (
               <div className="flex items-center justify-between">
-                <span className="text-sm" style={{ color: "rgba(200,216,240,0.9)" }}>⭐ Sức mạnh mềm</span>
+                <span className="text-sm flex items-center gap-1.5" style={{ color: "rgba(200,216,240,0.9)" }}><PowerIcon size={13} /> Sức mạnh mềm</span>
                 <span
                   className="text-sm font-bold px-3 py-0.5 rounded-full"
                   style={{
@@ -731,7 +824,7 @@ function CardModal({ card, onClose }: { card: EventCard; onClose: () => void }) 
         >
           {card.effect.money !== undefined && (
             <div className="flex items-center justify-between">
-              <span className="text-sm" style={{ color: "rgba(200,216,240,0.9)" }}>💰 Tiền</span>
+              <span className="text-sm flex items-center gap-1.5" style={{ color: "rgba(200,216,240,0.9)" }}><MoneyIcon size={13} /> Tiền</span>
               <span
                 className="text-sm font-bold px-3 py-0.5 rounded-full"
                 style={{
@@ -746,7 +839,7 @@ function CardModal({ card, onClose }: { card: EventCard; onClose: () => void }) 
           )}
           {card.effect.autonomy !== undefined && (
             <div className="flex items-center justify-between">
-              <span className="text-sm" style={{ color: "rgba(200,216,240,0.9)" }}>🏛️ Tự chủ</span>
+              <span className="text-sm flex items-center gap-1.5" style={{ color: "rgba(200,216,240,0.9)" }}><AutonomyIcon size={13} /> Tự chủ</span>
               <span
                 className="text-sm font-bold px-3 py-0.5 rounded-full"
                 style={{
@@ -761,7 +854,7 @@ function CardModal({ card, onClose }: { card: EventCard; onClose: () => void }) 
           )}
           {card.effect.softPower !== undefined && (
             <div className="flex items-center justify-between">
-              <span className="text-sm" style={{ color: "rgba(200,216,240,0.9)" }}>⭐ Quyền Lực Mềm</span>
+              <span className="text-sm flex items-center gap-1.5" style={{ color: "rgba(200,216,240,0.9)" }}><PowerIcon size={13} /> Quyền Lực Mềm</span>
               <span
                 className="text-sm font-bold px-3 py-0.5 rounded-full"
                 style={{
@@ -1135,230 +1228,9 @@ function QuizResultModal({ result, onClose }: { result: QuizResult; onClose: () 
   );
 }
 
-// ─── Rules Modal ─────────────────────────────────────────────────────────────
-
-function RulesModal({ onClose }: { onClose: () => void }) {
-  return (
-    <div
-      className="fixed inset-0 flex items-center justify-center z-[60] p-4"
-      style={{ background: "rgba(0,0,0,0.82)", backdropFilter: "blur(10px)" }}
-      onClick={onClose}
-    >
-      <div
-        className="animate-modal-entrance w-full max-w-2xl max-h-[85vh] flex flex-col rounded-2xl overflow-hidden"
-        style={{
-          background: "linear-gradient(160deg, #241a14 0%, #17100e 100%)",
-          border: "1.5px solid rgba(232,185,35,0.3)",
-          boxShadow: "0 0 0 1px rgba(255,255,255,0.04), 0 28px 80px rgba(0,0,0,0.9)",
-        }}
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 flex-shrink-0"
-          style={{ borderBottom: "1px solid rgba(232,185,35,0.15)" }}>
-          <div>
-            <h2 className="text-gold-static font-bold text-xl" style={{ fontFamily: "var(--font-display)" }}>
-              📖 Luật Chơi
-            </h2>
-            <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
-              Cờ Tỷ Phú Toàn Cầu — Chương 4 Mác-Lênin
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center transition-all text-sm"
-            style={{ background: "rgba(255,255,255,0.07)", color: "var(--text-secondary)" }}
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* Scrollable content */}
-        <div className="overflow-y-auto flex-1 px-5 py-4 space-y-5 text-sm" style={{ color: "var(--text-secondary)" }}>
-
-          {/* Điểm số */}
-          <section>
-            <h3 className="font-bold mb-2 text-base" style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>
-              🏆 Điểm Số
-            </h3>
-            <div className="rounded-xl px-4 py-3" style={{ background: "rgba(232,185,35,0.07)", border: "1px solid rgba(232,185,35,0.2)" }}>
-              <p className="font-bold text-center text-base" style={{ color: "var(--gold-400)", fontFamily: "var(--font-code)" }}>
-                Điểm = Tiền + Giá trị tài sản đã thâu tóm + Tự chủ×10 + Quyền lực mềm×5
-              </p>
-              <p className="text-center text-xs mt-1.5" style={{ color: "rgba(232,185,35,0.6)" }}>
-                Tự chủ = 0 → thua ngay lập tức, dù nhiều tiền/tài sản nhất
-              </p>
-            </div>
-          </section>
-
-          {/* 3 Vai */}
-          <section>
-            <h3 className="font-bold mb-2 text-base" style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>
-              👥 3 Vai Chơi
-            </h3>
-            <div className="space-y-2">
-              {[
-                { icon: "💰", name: "Tư bản tài chính", money: "$2.500", auto: "45", sp: "60",
-                  note: "Trả phí thuê chỉ 50% khi dẫm ô người khác (có kênh vốn thay thế). Chịu khủng hoảng 30%." },
-                { icon: "🇻🇳", name: "Việt Nam", money: "$1.500", auto: "80", sp: "65",
-                  note: "Trả phí thuê 60% (nhà nước điều tiết). Rút thẻ Chính sách (toàn tốt) tại ô Việt Nam." },
-                { icon: "🌏", name: "Nước đang phát triển", money: "$1.200", auto: "85", sp: "45",
-                  note: "Tự chủ cao nhất nhưng trả phí thuê 100% (đầy đủ) và 120% khi khủng hoảng." },
-              ].map(r => (
-                <div key={r.name} className="rounded-xl px-3 py-2.5 flex gap-3 items-start"
-                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                  <span className="text-xl flex-shrink-0 mt-0.5">{r.icon}</span>
-                  <div className="min-w-0">
-                    <div className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>{r.name}</div>
-                    <div className="text-xs mt-0.5 flex gap-3">
-                      <span style={{ color: "#00E676" }}>💵 {r.money}</span>
-                      <span style={{ color: "#42A5F5" }}>🏛️ {r.auto}</span>
-                      <span style={{ color: "#CE93D8" }}>⭐ {r.sp}</span>
-                    </div>
-                    <div className="text-xs mt-1" style={{ color: "rgba(139,163,204,0.75)" }}>{r.note}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Quy trình lượt */}
-          <section>
-            <h3 className="font-bold mb-2 text-base" style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>
-              🎲 Quy Trình Một Lượt
-            </h3>
-            <div className="space-y-1.5">
-              {[
-                ["1",  "Tung xúc xắc",        'Nhấn nút "Tung Xúc Xắc". Nếu đang bị chi phối: bấm bỏ lượt.'],
-                ["2",  "Di chuyển",            "Bấm vào biểu tượng đang nhảy để quân cờ đi từng bước đến ô đích."],
-                ["3",  "Xử lý ô đến",          "Ô sở hữu được: quiz để mua (chưa chủ) hoặc trả phí thuê (có chủ). Ô khác: hiệu ứng/thẻ/vote như thường."],
-                ["4a", "Đọc thông tin ô",      'Modal thông tin ô hiện ra, bấm "Đã hiểu ✓" để tiếp tục.'],
-                ["4b", "Trả lời quiz / đọc thẻ", '(Tuỳ ô) Trả lời câu hỏi thâu tóm, hoặc đọc thẻ sự kiện, bấm "Đã hiểu ✓".'],
-                ["5",  "Kết thúc lượt",        'Bấm "Kết Thúc Lượt" để chuyển sang người tiếp theo.'],
-              ].map(([step, title, desc]) => (
-                <div key={step} className="flex gap-3 items-start px-3 py-2 rounded-lg"
-                  style={{ background: "rgba(255,255,255,0.03)" }}>
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold mt-0.5"
-                    style={{ background: "rgba(232,185,35,0.15)", color: "var(--gold-400)" }}>
-                    {step}
-                  </span>
-                  <div>
-                    <div className="font-semibold text-xs" style={{ color: "var(--text-primary)" }}>{title}</div>
-                    <div className="text-xs mt-0.5" style={{ color: "rgba(139,163,204,0.7)" }}>{desc}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Loại ô */}
-          <section>
-            <h3 className="font-bold mb-2 text-base" style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>
-              🗺️ Các Loại Ô
-            </h3>
-            <div className="grid grid-cols-2 gap-1.5">
-              {[
-                ["#FF3B3B", "🔴 Tư bản tài chính (×9, sở hữu được)", "Chưa chủ: quiz để mua. Có chủ: trả phí thuê."],
-                ["#FF8C00", "🟠 Tập đoàn (×4, sở hữu được)", "Chưa chủ: quiz để mua. Có chủ: trả phí thuê."],
-                ["#B44FFF", "🟣 Consortium (×5)", "Vote tập thể. Tư bản TC nhận cổ tức."],
-                ["#1E90FF", "🔵 TNC — Công ty xuyên QG (×8, sở hữu được)", "Chưa chủ: quiz để mua. Có chủ: trả phí thuê."],
-                ["#00C853", "🟢 Việt Nam (×8)", "Việt Nam rút thẻ tốt. Khác: hiệu ứng thường."],
-                ["#FF1744", "⚫ Khủng hoảng (×3)", "Tất cả mất tiền. Nước ĐPT mất 120%."],
-                ["#e8b923", "⭐ Xuất phát (ô 0)", "Đi qua → nhận +$200."],
-                ["#00BFA5", "⬜ Tự do (ô 10) / Cơ hội (ô 39)", "Tự do: không có gì. Cơ hội: rút thẻ ngẫu nhiên."],
-              ].map(([color, label, desc]) => (
-                <div key={label} className="rounded-lg px-2.5 py-2"
-                  style={{ background: "rgba(255,255,255,0.03)", borderLeft: `3px solid ${color}` }}>
-                  <div className="font-semibold text-xs" style={{ color: "var(--text-primary)" }}>{label}</div>
-                  <div className="text-[10px] mt-0.5" style={{ color: "rgba(139,163,204,0.65)" }}>{desc}</div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Thâu tóm & Phí thuê */}
-          <section>
-            <h3 className="font-bold mb-2 text-base" style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>
-              🏭 Thâu Tóm &amp; Phí Thuê (Ô Đỏ/Cam/Xanh Dương)
-            </h3>
-            <div className="rounded-xl px-3 py-2.5 text-xs space-y-1.5"
-              style={{ background: "rgba(232,185,35,0.06)", border: "1px solid rgba(232,185,35,0.2)" }}>
-              <p style={{ color: "var(--text-primary)" }}>21 ô (Tư bản tài chính / Tập đoàn / TNC) có thể mua được:</p>
-              <p>• <strong style={{ color: "var(--gold-300)" }}>Chưa có chủ</strong> → hiện câu hỏi kiến thức Chương 4. Trả lời đúng + đủ tiền → <strong style={{ color: "#40E090" }}>thâu tóm</strong> ô đó (trở thành chủ).</p>
-              <p>• Trả lời <strong style={{ color: "#FF6B7A" }}>sai</strong> → mất $30 chi phí cơ hội và −10 Tự chủ.</p>
-              <p>• <strong style={{ color: "#FF6B7A" }}>Đã có chủ</strong> (người khác) → tự động trả <strong>phí thuê</strong> cho chủ sở hữu — mô phỏng việc chiếm đoạt giá trị thặng dư.</p>
-              <p>• Phí thuê thực trả tuỳ vai: <strong style={{ color: "#70B8FF" }}>Tư bản TC 50%</strong> · <strong style={{ color: "#40E090" }}>Việt Nam 60%</strong> · <strong style={{ color: "#FFAB40" }}>Nước ĐPT 100%</strong>.</p>
-              <p>• Dẫm vào ô của chính mình → miễn phí.</p>
-              <p>• Giá trị các ô đã thâu tóm được cộng vào điểm cuối game.</p>
-            </div>
-          </section>
-
-          {/* Ô 30 + Kết thúc */}
-          <section>
-            <h3 className="font-bold mb-2 text-base" style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>
-              ⚠️ Ô Nguy Hiểm &amp; Kết Thúc Game
-            </h3>
-            <div className="space-y-2">
-              <div className="rounded-xl px-3 py-2.5"
-                style={{ background: "rgba(255,23,68,0.08)", border: "1px solid rgba(255,23,68,0.25)" }}>
-                <div className="font-bold text-xs" style={{ color: "#FF6B7A" }}>🚧 Ô 30 — Đình Trệ Sản Xuất</div>
-                <div className="text-xs mt-1" style={{ color: "rgba(255,107,122,0.8)" }}>
-                  −40 Tự chủ &nbsp;·&nbsp; −20 Sức mạnh &nbsp;·&nbsp; 2 lượt không thu phí thuê / không thâu tóm được ô mới (vẫn di chuyển và biểu quyết bình thường)
-                </div>
-              </div>
-              <div className="rounded-xl px-3 py-2.5"
-                style={{ background: "rgba(255,23,68,0.06)", border: "1px solid rgba(255,23,68,0.2)" }}>
-                <div className="font-bold text-xs" style={{ color: "#FF6B7A" }}>💀 Kết thúc game</div>
-                <div className="text-xs mt-1" style={{ color: "rgba(139,163,204,0.75)" }}>
-                  Khi Tự chủ của bất kỳ ai về 0, game kết thúc ngay.
-                  Popup xếp hạng tự động hiện — người điểm cao nhất thắng.
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Biểu quyết */}
-          <section>
-            <h3 className="font-bold mb-2 text-base" style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>
-              🗳️ Hội Đồng Biểu Quyết (Ô Tím)
-            </h3>
-            <div className="rounded-xl px-3 py-2.5 text-xs space-y-1"
-              style={{ background: "rgba(180,79,255,0.07)", border: "1px solid rgba(180,79,255,0.2)" }}>
-              <p style={{ color: "var(--text-primary)" }}>Khi người không phải Tư bản TC đến ô Consortium:</p>
-              <p>• Tất cả người chơi cùng vote <strong style={{ color: "#00E676" }}>Chấp nhận</strong> hoặc <strong style={{ color: "#FF6B7A" }}>Từ chối</strong></p>
-              <p>• Đa số quyết định → hiệu ứng áp lên người đến ô đó</p>
-              <p>• Tư bản TC không vote — nhận cổ tức +$80, +10 Quyền lực mềm</p>
-              <div className="mt-2 pt-2" style={{ borderTop: "1px solid rgba(180,79,255,0.2)" }}>
-                <p className="font-semibold mb-1" style={{ color: "var(--text-primary)" }}>5 ô Consortium:</p>
-                {[
-                  ["5 — Oil Consortium", "Chấp nhận: +$150, −25 TC / Từ chối: +20 TC, +15 SP"],
-                  ["13 — Tech Alliance", "Chấp nhận: +$80, −20 TC, −10 SP / Từ chối: +25 TC, +10 SP"],
-                  ["17 — Banking Syndicate", "Chấp nhận: +$200, −35 TC / Từ chối: +30 TC, +10 SP"],
-                  ["20 — Hội đồng Tư vấn", "Chấp nhận: +$100, −30 TC, −15 SP / Từ chối: +25 TC, +20 SP"],
-                  ["26 — WTO", "Chấp nhận: +$150, −20 TC, +10 SP / Từ chối: +20 TC, −5 SP"],
-                ].map(([o, e]) => (
-                  <div key={o} className="flex gap-2 py-0.5">
-                    <span className="flex-shrink-0 font-semibold" style={{ color: "#B44FFF", minWidth: 140 }}>{o}</span>
-                    <span style={{ color: "rgba(139,163,204,0.7)" }}>{e}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-        </div>
-
-        {/* Footer */}
-        <div className="flex-shrink-0 px-5 py-3 flex justify-end"
-          style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-          <button onClick={onClose} className="btn-gold px-6 py-2 text-sm">
-            Đã hiểu ✓
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+// RulesModal is now shared with the home page (players can read the rules
+// before creating/joining a room, not just once already inside a match) —
+// see src/components/GameRulesModal.tsx.
 
 // ─── Game Over Modal ─────────────────────────────────────────────────────────
 
@@ -1538,6 +1410,11 @@ export default function RoomPage() {
   const preRollPlayersRef = useRef<Player[]>([]);
 
   const [landingCell, setLandingCell]         = useState<BoardCellFull | null>(null);
+  // Purely informational — opened by clicking ANY cell on the board (see
+  // BoardCell's onCellInfo) so players can read the "Kiến thức Chương 4" of
+  // every cell whenever they like. Fully separate from `landingCell`, which
+  // only fires from the real dice-roll/landing flow and can trigger a quiz.
+  const [viewCell, setViewCell]               = useState<BoardCellFull | null>(null);
   const visualPosRef                           = useRef<Record<string, number>>({});
   const [visualPositions, setVisualPositions] = useState<Record<string, number>>({});
   const [pendingMove, setPendingMove]         = useState<{ pid: string; to: number; isMe: boolean } | null>(null);
@@ -1729,10 +1606,6 @@ export default function RoomPage() {
   }
 
   // ── Derived values ────────────────────────────────────────────────────────
-  const displayPlayers = (pendingMove && preRollPlayersRef.current.length > 0)
-    ? preRollPlayersRef.current
-    : room.players;
-
   const tokenColors: Record<string, string> = {};
   room.players.forEach((p, i) => { tokenColors[p.id] = TOKEN_COLORS[i % TOKEN_COLORS.length]; });
 
@@ -1782,6 +1655,18 @@ export default function RoomPage() {
       {!showGameOver && !landingCell && !lastCard && !pendingMove && voteSession && (
         <VoteModal vote={voteSession} onVote={castVote}
           totalPlayers={room.players.filter(p => !p.hasLeft).length} />
+      )}
+
+      {/* ── Xem kiến thức của bất kỳ ô nào (bấm vào ô trên bàn cờ) — thuần
+          tham khảo, không đụng tới quiz/landing thật, nên chỉ ẩn khi đang có
+          modal gameplay khác che màn hình để tránh chồng lấn. */}
+      {!showGameOver && !landingCell && !pendingMove && !quizSession && !voteSession && !capturedCard && !showLeaveConfirm && viewCell && (
+        <CellLandingModal
+          cell={viewCell}
+          ownerName={room.cellOwners[viewCell.id] ? room.players.find(p => p.id === room.cellOwners[viewCell.id])?.name : undefined}
+          isMine={!!myPlayer && room.cellOwners[viewCell.id] === myPlayer.id}
+          onClose={() => setViewCell(null)}
+        />
       )}
 
       {/* ── Leave confirm ── */}
@@ -1887,6 +1772,23 @@ export default function RoomPage() {
             📖 Luật chơi
           </button>
 
+          {/* Start-game button — visible up top for the host while in the waiting room */}
+          {room.phase === "waiting" && myPlayer?.id === room.hostId && (
+            <button
+              onClick={startGame}
+              disabled={room.players.length < 3}
+              className="px-3 py-1 rounded-lg text-xs font-bold transition-all hidden sm:block"
+              style={{
+                border: "1px solid rgba(0,200,83,0.4)",
+                color: room.players.length < 3 ? "rgba(0,200,83,0.5)" : "#40E090",
+                background: "rgba(0,200,83,0.08)",
+                cursor: room.players.length < 3 ? "not-allowed" : "pointer",
+              }}
+            >
+              {room.players.length < 3 ? `⏳ Cần thêm ${3 - room.players.length}` : "🚀 Bắt đầu"}
+            </button>
+          )}
+
           <span style={{ color: "var(--text-secondary)" }}>
             Phòng:{" "}
             <span
@@ -1922,204 +1824,10 @@ export default function RoomPage() {
 
       {/* ── Main layout ── */}
       <div className="flex-1 overflow-y-auto xl:overflow-hidden">
-      <div className="flex flex-col xl:flex-row gap-3 p-3 max-w-[1400px] mx-auto xl:h-full">
-
-        {/* ── Left sidebar ── */}
-        <div className="xl:w-52 flex-shrink-0 space-y-2 xl:h-full xl:overflow-y-auto">
-          {/* Player list */}
-          <div
-            className="rounded-2xl p-3"
-            style={{
-              background: "var(--bg-surface-1)",
-              border: "1px solid var(--border-subtle)",
-            }}
-          >
-            <h3
-              className="text-[10px] font-bold uppercase tracking-widest mb-2.5"
-              style={{ color: "var(--text-secondary)" }}
-            >
-              👥 Người Chơi ({room.players.length})
-            </h3>
-            <div className="space-y-2">
-              {displayPlayers.map((player, idx) => (
-                <PlayerPanel
-                  key={player.id}
-                  player={player}
-                  isCurrent={idx === room.currentTurnIndex}
-                  tokenColor={tokenColors[player.id] ?? "bg-white"}
-                  isMe={player.socketId === socket?.id}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Scoring formula */}
-          <div
-            className="rounded-2xl p-3 text-xs"
-            style={{
-              background: "rgba(255,255,255,0.025)",
-              border: "1px solid rgba(255,255,255,0.05)",
-            }}
-          >
-            <p className="font-bold mb-1" style={{ color: "var(--text-primary)" }}>📊 Công thức điểm</p>
-            <p style={{ color: "var(--text-secondary)", fontFamily: "var(--font-code)", fontSize: "11px" }}>
-              Tiền + Tài sản thâu tóm + Tự chủ×10 + Sức mạnh×5
-            </p>
-            <p className="mt-1" style={{ color: "#FF6B7A" }}>⚠️ Tự chủ = 0 → Thua</p>
-          </div>
-
-          {/* Waiting phase */}
-          {room.phase === "waiting" && (
-            <div
-              className="rounded-2xl p-4 text-center space-y-3"
-              style={{
-                background: "var(--bg-surface-1)",
-                border: "1px solid rgba(232,185,35,0.2)",
-              }}
-            >
-              <div>
-                <p className="text-[10px] uppercase tracking-widest mb-1"
-                  style={{ color: "var(--text-secondary)" }}>Mã phòng</p>
-                <p
-                  className="text-3xl font-black tracking-widest"
-                  style={{ color: "var(--gold-400)", fontFamily: "var(--font-code)" }}
-                >
-                  {room.roomCode}
-                </p>
-              </div>
-              <div className="text-sm" style={{ color: "var(--text-secondary)" }}>
-                <span style={{ color: room.players.length >= 3 ? "#00E676" : "#FFAB00", fontWeight: 700 }}>
-                  {room.players.length}/6 người
-                </span>
-                {" "}— cần tối thiểu 3 người
-              </div>
-              {myPlayer?.id === room.hostId ? (
-                <button
-                  onClick={startGame}
-                  disabled={room.players.length < 3}
-                  className="btn-green w-full py-3 text-base"
-                >
-                  {room.players.length < 3
-                    ? `⏳ Chờ thêm ${3 - room.players.length} người...`
-                    : "🚀 Bắt đầu trò chơi!"}
-                </button>
-              ) : (
-                <p className="text-xs" style={{ color: "rgba(139,163,204,0.5)" }}>
-                  Chờ chủ phòng bắt đầu game...
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Game over */}
-          {room.phase === "finished" && (
-            <div className="space-y-3">
-              <div
-                className="rounded-2xl p-4"
-                style={{
-                  background: "rgba(232,185,35,0.06)",
-                  border: "1px solid rgba(232,185,35,0.25)",
-                }}
-              >
-                <h3 className="font-bold mb-2 text-sm" style={{ color: "var(--gold-300)", fontFamily: "var(--font-display)" }}>
-                  🏁 Kết Quả
-                </h3>
-                {sortedScores.map((p, i) => (
-                  <div key={p.id} className="flex justify-between py-1.5 text-sm"
-                    style={{ borderBottom: i < sortedScores.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
-                    <span>
-                      {["🥇","🥈","🥉"][i] ?? ""}
-                      {" "}
-                      <span className="text-white">{p.name}</span>
-                    </span>
-                    <span className="font-bold" style={{ color: "var(--gold-400)", fontFamily: "var(--font-code)" }}>
-                      {p.score}pt
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <div
-                className="rounded-2xl p-4 space-y-2"
-                style={{
-                  background: "var(--bg-surface-1)",
-                  border: "1px solid var(--border-subtle)",
-                }}
-              >
-                <p className="font-bold text-xs uppercase tracking-widest" style={{ color: "var(--gold-400)" }}>
-                  📚 Thảo Luận Sau Game
-                </p>
-                <p className="text-white text-xs font-semibold leading-relaxed">
-                  Theo lý luận Lênin về tư bản tài chính:
-                </p>
-                <ul className="space-y-2 text-xs leading-relaxed" style={{ color: "rgba(139,163,204,0.9)" }}>
-                  <li>• Tại sao <span style={{ color: "var(--gold-300)", fontWeight: 600 }}>Tư bản tài chính</span> lại có lợi thế trên hầu hết ô bàn cờ?</li>
-                  <li>• <span style={{ color: "#40E090", fontWeight: 600 }}>Việt Nam</span> dùng công cụ gì để giảm thiểu tác động?</li>
-                  <li>• <span style={{ color: "#70B8FF", fontWeight: 600 }}>Nước đang phát triển</span> có nên từ chối tất cả dòng vốn nước ngoài không?</li>
-                  <li>• Trong biểu quyết Hội đồng Tư vấn, lựa chọn nào phản ánh lợi ích quốc gia dài hạn?</li>
-                </ul>
-                <p
-                  className="text-xs mt-2 pt-2 italic"
-                  style={{ borderTop: "1px solid rgba(255,255,255,0.06)", color: "rgba(139,163,204,0.5)" }}
-                >
-                  &ldquo;Không chỉ tích lũy tư bản — phải giữ chủ quyền kinh tế!&rdquo; — Lênin (1916)
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
+      <div className="flex flex-col xl:flex-row gap-3 p-3 max-w-[1800px] mx-auto xl:h-full">
 
         {/* ── Center — board ── */}
         <div className="flex-1 flex flex-col items-center gap-3 min-w-0 xl:h-full xl:overflow-hidden">
-
-          {/* Turn status banner */}
-          <div
-            className="w-full flex-shrink-0 rounded-2xl px-4 py-2.5 flex items-center justify-between"
-            style={{
-              background: room.phase === "playing" && isMyTurn
-                ? "rgba(0,200,83,0.1)"
-                : room.phase === "voting"
-                ? "rgba(180,79,255,0.1)"
-                : room.phase === "quiz"
-                ? "rgba(232,185,35,0.1)"
-                : "rgba(255,255,255,0.03)",
-              border: `1px solid ${
-                room.phase === "playing" && isMyTurn ? "rgba(0,200,83,0.3)"
-                : room.phase === "voting" ? "rgba(180,79,255,0.3)"
-                : room.phase === "quiz" ? "rgba(232,185,35,0.3)"
-                : "rgba(255,255,255,0.06)"
-              }`,
-            }}
-          >
-            <div className="flex items-center gap-2">
-              {room.phase === "waiting" && (
-                <><span>⏳</span><span style={{ color: "var(--text-secondary)" }}>Chờ người chơi vào phòng...</span></>
-              )}
-              {room.phase === "playing" && isMyTurn && (
-                <><span>🎮</span><span className="font-bold" style={{ color: "#40E090" }}>Lượt của bạn!</span></>
-              )}
-              {room.phase === "playing" && !isMyTurn && (
-                <><span>👤</span><span style={{ color: "var(--text-secondary)" }}>Lượt của <strong className="text-white">{currentPlayer?.name}</strong></span></>
-              )}
-              {room.phase === "voting" && (
-                <><span>🗳️</span><span className="font-bold" style={{ color: "#CE93D8" }}>Hội đồng đang biểu quyết...</span></>
-              )}
-              {room.phase === "quiz" && (
-                <><span>❓</span><span className="font-bold" style={{ color: "var(--gold-400)" }}>Đang trả lời câu hỏi thâu tóm...</span></>
-              )}
-              {room.phase === "finished" && (
-                <><span>🏁</span><span className="font-bold" style={{ color: "var(--gold-300)" }}>Trò chơi kết thúc!</span></>
-              )}
-            </div>
-            {myPlayer && (
-              <div className="flex items-center gap-3 text-sm">
-                <span className="font-bold" style={{ color: "#00E676", fontFamily: "var(--font-code)" }}>
-                  ${myPlayer.money.toLocaleString()}
-                </span>
-                <span style={{ color: "#42A5F5" }}>🏛️{myPlayer.autonomy}</span>
-                <span style={{ color: "#CE93D8" }}>⭐{myPlayer.softPower}</span>
-              </div>
-            )}
-          </div>
 
           {/* Board */}
           <div className="flex-1 min-h-0 w-full flex items-center justify-center">
@@ -2127,16 +1835,19 @@ export default function RoomPage() {
               className="relative rounded-[10px]"
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(11, 1fr)",
-                gridTemplateRows: "repeat(11, 1fr)",
-                aspectRatio: "1 / 1",
-                height: "min(calc(100vh - 130px), 800px)",
-                maxHeight: "800px",
-                maxWidth: "800px",
-                width: "auto",
-                border: "3px solid #b98d16",
+                // minmax(0, 1fr) — plain 1fr resolves to minmax(auto, 1fr), so any
+                // cell whose text needs several wrapped lines was forcing its whole
+                // row/column taller than the rest. Capping the min at 0 forces every
+                // track to the same size; overflow-hidden + line-clamp handles overflow.
+                gridTemplateColumns: "repeat(11, minmax(0, 1fr))",
+                gridTemplateColumns: "repeat(11, minmax(0, 1fr))",
+gridTemplateRows: "repeat(11, minmax(0, 1fr))",
+aspectRatio: "1.08 / 1",
+width: "min(100%, calc(100vh - 40px), 1900px)",
+height: "auto",
+maxWidth: "1900px",
+                border: "1px solid rgba(255,255,255,0.06)",
                 boxShadow:
-                  "inset 0 0 0 1px #96700f40, " +
                   "0 20px 80px rgba(0,0,0,0.85), " +
                   "0 0 60px rgba(232,185,35,0.06)",
                 background: "var(--bg-board)",
@@ -2154,6 +1865,7 @@ export default function RoomPage() {
                   pendingPlayerId={pendingMove?.pid ?? null}
                   onTokenClick={walkToken}
                   cellOwners={room.cellOwners}
+                  onCellInfo={setViewCell}
                 />
               ))}
 
@@ -2163,25 +1875,32 @@ export default function RoomPage() {
                 style={{
                   gridRow: "2 / 11",
                   gridColumn: "2 / 11",
-                  background: "linear-gradient(160deg, #241a14 0%, #17100e 100%)",
+                  background: `
+                    radial-gradient(circle at 50% 40%, rgba(232,185,35,0.06), transparent 60%),
+                    linear-gradient(160deg, #241a14 0%, #17100e 100%)
+                  `,
                 }}
               >
                 {/* Title */}
-                <div className="text-center mb-2 px-2">
+                <div className="text-center mb-4 px-2">
                   <div
-                    className="text-gold-gradient font-bold text-sm sm:text-base"
+                    className="text-gold-gradient font-bold text-2xl sm:text-3xl"
                     style={{ fontFamily: "var(--font-display)" }}
                   >
-                    ♔ CỜ TỶ PHÚ
+                    ♔ CỜ TỶ PHÚ TOÀN CẦU
                   </div>
-                  <div className="text-[9px] sm:text-[10px] mt-0.5"
-                    style={{ color: "rgba(139,163,204,0.5)" }}>
+                  <div className="text-xs sm:text-sm mt-1"
+                    style={{ color: "rgba(139,163,204,0.6)" }}>
                     Tư Bản Tài Chính &amp; Quyền Lực Mềm
                   </div>
+                  <div
+                    className="mx-auto mt-2"
+                    style={{ width: 48, height: 2, background: "rgba(232,185,35,0.4)", borderRadius: 2 }}
+                  />
                 </div>
 
                 {/* Dice display */}
-                <div className="mb-2">
+                <div className="mb-4" style={{ transform: "scale(1.6)" }}>
                   {isRolling ? (
                     <DiceFace value={rollingFace} rolling />
                   ) : diceAnimation ? (
@@ -2199,74 +1918,23 @@ export default function RoomPage() {
                   )}
                 </div>
 
-                {/* Controls */}
-                {room.phase !== "waiting" && room.phase !== "finished" && isMyTurn && (
-                  <div className="space-y-1.5 w-full px-3 sm:px-6">
-                    {!room.hasRolled ? (
-                      <>
-                        <button
-                          onClick={rollDice}
-                          className="btn-gold w-full py-2 sm:py-2.5 text-sm sm:text-base"
-                        >
-                          🎲 Tung Xúc Xắc
-                        </button>
-                        {myPlayer && myPlayer.skipTurns > 0 ? (
-                          <p className="text-center text-[10px]" style={{ color: "#FF6B7A" }}>
-                            🚧 Đang đình trệ — không thu phí/thâu tóm được (còn {myPlayer.skipTurns} lượt)
-                          </p>
-                        ) : (
-                          <p className="text-center text-[10px]" style={{ color: "rgba(139,163,204,0.5)" }}>
-                            Tung xúc xắc để di chuyển
-                          </p>
-                        )}
-                      </>
-                    ) : pendingMove ? (
-                      <p className="text-center text-sm animate-pulse py-1.5"
-                        style={{ color: "var(--gold-400)" }}>
-                        👆 Bấm vào biểu tượng để di chuyển!
-                      </p>
-                    ) : landingCell || lastCard || quizSession || lastQuizResult ? (
-                      <p className="text-center text-sm py-1.5" style={{ color: "var(--text-secondary)" }}>
-                        📖 Đọc thông tin ô / trả lời quiz rồi bấm &quot;Đã hiểu&quot;...
-                      </p>
-                    ) : (
-                      <>
-                        <button
-                          onClick={endTurn}
-                          disabled={room.phase === "voting" || room.phase === "quiz"}
-                          className="btn-green w-full py-2 sm:py-2.5 text-sm"
-                        >
-                          {room.phase === "voting" ? "⏳ Chờ kết quả biểu quyết..."
-                            : room.phase === "quiz" ? "⏳ Chờ trả lời quiz..."
-                            : "✓ Kết Thúc Lượt"}
-                        </button>
-                        <p className="text-center text-[10px]" style={{ color: "rgba(139,163,204,0.5)" }}>
-                          Đã đến ô — nhấn kết thúc để chuyển lượt
-                        </p>
-                      </>
-                    )}
-                  </div>
-                )}
-
-                {/* Current position */}
-                {myPlayer && myVisualPos >= 0 && (
-                  <div className="mt-2 px-3 text-center max-w-full">
-                    <div className="text-[9px]" style={{ color: "rgba(139,163,204,0.5)" }}>Vị trí của bạn</div>
-                    <div className="text-[10px] font-bold truncate" style={{ color: "var(--text-secondary)" }}>
-                      {BOARD_CELLS[myVisualPos]?.name}
-                    </div>
-                  </div>
+                {/* Status line — full controls now live in the right sidebar TurnCard */}
+                {room.phase === "playing" && currentPlayer && (
+                  <p className="text-center text-sm mt-2 px-3" style={{ color: "var(--text-secondary)" }}>
+                    Lượt của <strong style={{ color: isMyTurn ? "#40E090" : "var(--text-primary)" }}>{isMyTurn ? "bạn" : currentPlayer.name}</strong>
+                    {" — "}{room.hasRolled ? "đã tung xúc xắc" : "chưa tung xúc xắc"}.
+                  </p>
                 )}
 
                 {/* Color legend */}
-                <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-0.5 px-3">
+                <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 px-3">
                   {[
-                    { color: "#FF3B3B", label: "Tư Bản Tài Chính" },
-                    { color: "#FF8C00", label: "Tập Đoàn Đa Ngành" },
-                    { color: "#B44FFF", label: "Liên Minh Độc Quyền" },
-                    { color: "#1E90FF", label: "Công Ty Xuyên QG" },
-                    { color: "#00C853", label: "Chính Sách Việt Nam" },
-                    { color: "#FF1744", label: "Khủng Hoảng Kinh Tế" },
+                    { color: "#a02820", label: "Tư Bản Tài Chính" },
+                    { color: "#b0621a", label: "Tập Đoàn Đa Ngành" },
+                    { color: "#7a3d94", label: "Liên Minh Độc Quyền" },
+                    { color: "#2f5f95", label: "Công Ty Xuyên QG" },
+                    { color: "#1f7a45", label: "Chính Sách Việt Nam" },
+                    { color: "#8a1a12", label: "Khủng Hoảng Kinh Tế" },
                   ].map(({ color, label }) => (
                     <div key={label} className="flex items-center gap-1">
                       <div className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: color }} />
@@ -2282,161 +1950,179 @@ export default function RoomPage() {
         </div>
 
         {/* ── Right sidebar ── */}
-        <div className="xl:w-52 flex-shrink-0 space-y-2 xl:h-full xl:overflow-y-auto">
-          {/* Mobile controls */}
-          {room.phase !== "waiting" && room.phase !== "finished" && isMyTurn && (
+        <div className="xl:w-80 flex-shrink-0 space-y-3 xl:h-full xl:overflow-y-auto">
+
+          {/* Waiting-room card — room code + start button (host) */}
+          {room.phase === "waiting" && (
             <div
-              className="xl:hidden rounded-2xl p-3 space-y-2"
-              style={{
-                background: "rgba(0,200,83,0.08)",
-                border: "1px solid rgba(0,200,83,0.25)",
-              }}
+              className="rounded-2xl p-4 text-center space-y-3"
+              style={{ background: "var(--bg-surface-1)", border: "1px solid rgba(232,185,35,0.2)" }}
             >
-              {!room.hasRolled ? (
-                <>
-                  <button onClick={rollDice} className="btn-gold w-full py-3 text-base">
-                    🎲 Tung Xúc Xắc
-                  </button>
-                  {myPlayer && myPlayer.skipTurns > 0 && (
-                    <p className="text-center text-xs" style={{ color: "#FF6B7A" }}>
-                      🚧 Đình trệ — còn {myPlayer.skipTurns} lượt
-                    </p>
-                  )}
-                </>
-              ) : pendingMove ? (
-                <p className="text-center text-sm animate-pulse py-1" style={{ color: "var(--gold-400)" }}>
-                  👆 Bấm vào biểu tượng để di chuyển!
+              <div>
+                <p className="text-[10px] uppercase tracking-widest mb-1" style={{ color: "var(--text-secondary)" }}>Mã phòng</p>
+                <p className="text-3xl font-black tracking-widest" style={{ color: "var(--gold-400)", fontFamily: "var(--font-code)" }}>
+                  {room.roomCode}
                 </p>
-              ) : landingCell || lastCard || quizSession || lastQuizResult ? (
-                <p className="text-center text-sm py-1" style={{ color: "var(--text-secondary)" }}>
-                  📖 Đọc thông tin ô / trả lời quiz...
-                </p>
-              ) : (
-                <button onClick={endTurn} disabled={room.phase === "voting" || room.phase === "quiz"}
-                  className="btn-green w-full py-3">
-                  {room.phase === "voting" ? "⏳ Chờ biểu quyết..."
-                    : room.phase === "quiz" ? "⏳ Chờ quiz..."
-                    : "✓ Kết Thúc Lượt"}
+              </div>
+              <div className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                <span style={{ color: room.players.length >= 3 ? "#00E676" : "#FFAB00", fontWeight: 700 }}>
+                  {room.players.length}/6 người
+                </span>
+                {" "}— cần tối thiểu 3 người
+              </div>
+              {myPlayer?.id === room.hostId ? (
+                <button onClick={startGame} disabled={room.players.length < 3} className="btn-green w-full py-3 text-base">
+                  {room.players.length < 3
+                    ? `⏳ Chờ thêm ${3 - room.players.length} người...`
+                    : "🚀 Bắt đầu trò chơi!"}
                 </button>
+              ) : (
+                <p className="text-xs" style={{ color: "rgba(139,163,204,0.5)" }}>Chờ chủ phòng bắt đầu game...</p>
               )}
             </div>
           )}
 
-          {/* Current position panel */}
-          {myPlayer && myVisualPos >= 0 && (() => {
-            const curCell = BOARD_CELLS[myVisualPos];
-            const stripClr = curCell ? (STRIP_COLORS[curCell.type] ?? "#555") : "#555";
-            return (
-              <div
-                className="rounded-2xl overflow-hidden"
-                style={{
-                  background: "var(--bg-surface-1)",
-                  border: "1px solid var(--border-subtle)",
-                }}
-              >
-                <div className="h-1" style={{ background: stripClr }} />
-                <div className="p-3">
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest mb-2"
-                    style={{ color: "var(--text-secondary)" }}>
-                    📍 Vị trí của bạn
-                  </h3>
-                  <div className="text-sm font-bold text-white">{curCell?.name}</div>
-                  <div className="text-xs mt-1 leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                    {curCell?.description}
-                  </div>
-                  {curCell?.ownable && (() => {
-                    const curOwnerId = room.cellOwners[curCell.id];
-                    const curOwnerName = curOwnerId ? room.players.find(p => p.id === curOwnerId)?.name : undefined;
-                    return (
-                      <div className="mt-2 space-y-1">
-                        <div className="flex flex-wrap gap-1">
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
-                            style={{ background: "rgba(232,185,35,0.12)", color: "var(--gold-300)", fontFamily: "var(--font-code)" }}>
-                            💰 Giá ${curCell.price}
-                          </span>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
-                            style={{ background: "rgba(255,59,59,0.12)", color: "#FF8080", fontFamily: "var(--font-code)" }}>
-                            💸 Thuê ${curCell.rent}
-                          </span>
-                        </div>
-                        {curOwnerName ? (
-                          <div className="text-[10px]" style={{ color: curOwnerId === myPlayer?.id ? "#40E090" : "#FF6B7A" }}>
-                            {curOwnerId === myPlayer?.id ? "✅ Của bạn" : `🔒 Chủ: ${curOwnerName}`}
-                          </div>
-                        ) : (
-                          <div className="text-[10px]" style={{ color: "rgba(139,163,204,0.6)" }}>❓ Chưa có chủ</div>
-                        )}
-                      </div>
-                    );
-                  })()}
-                  {curCell && !curCell.ownable && (() => {
-                    const fx = curCell.effect;
-                    return (
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {fx.money      && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
-                            style={{
-                              background: fx.money > 0 ? "rgba(0,230,118,0.12)" : "rgba(255,23,68,0.12)",
-                              color: fx.money > 0 ? "#00E676" : "#FF4466",
-                              fontFamily: "var(--font-code)",
-                            }}>
-                            {fx.money > 0 ? "+" : ""}{fx.money}$
-                          </span>
-                        )}
-                        {fx.autonomy   && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
-                            style={{
-                              background: fx.autonomy > 0 ? "rgba(30,144,255,0.12)" : "rgba(255,100,0,0.12)",
-                              color: fx.autonomy > 0 ? "#40C4FF" : "#FFAB40",
-                              fontFamily: "var(--font-code)",
-                            }}>
-                            {fx.autonomy > 0 ? "+" : ""}{fx.autonomy} Tự chủ
-                          </span>
-                        )}
-                        {fx.softPower  && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
-                            style={{
-                              background: fx.softPower > 0 ? "rgba(180,79,255,0.12)" : "rgba(255,23,68,0.12)",
-                              color: fx.softPower > 0 ? "#CE93D8" : "#FF6B8A",
-                              fontFamily: "var(--font-code)",
-                            }}>
-                            {fx.softPower > 0 ? "+" : ""}{fx.softPower} Sức mạnh
-                          </span>
-                        )}
-                        {fx.drawCard    && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
-                          style={{ background: "rgba(232,185,35,0.12)", color: "var(--gold-300)" }}>🃏 Rút thẻ</span>}
-                        {fx.councilVote && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
-                          style={{ background: "rgba(180,79,255,0.12)", color: "#CE93D8" }}>🗳️ Biểu quyết</span>}
-                        {fx.allPlayers  && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
-                          style={{ background: "rgba(255,23,68,0.12)", color: "#FF6B7A" }}>⚠️ Tất cả</span>}
-                      </div>
-                    );
-                  })()}
+          {/* Turn card — current player's stats + roll/end-turn controls */}
+          {room.phase !== "waiting" && (
+            <div
+              className="rounded-2xl p-3.5"
+              style={{
+                background: "var(--bg-surface-1)",
+                border: `1.5px solid ${isMyTurn && room.phase === "playing" ? "rgba(0,200,83,0.35)" : "var(--border-subtle)"}`,
+              }}
+            >
+              {room.phase === "finished" ? (
+                <div className="text-center py-1">
+                  <div className="text-2xl mb-1">🏁</div>
+                  <p className="font-bold text-sm" style={{ color: "var(--gold-300)", fontFamily: "var(--font-display)" }}>
+                    Trò chơi kết thúc!
+                  </p>
+                  <p className="text-[11px] mt-1" style={{ color: "var(--text-secondary)" }}>Xem bảng điểm bên dưới</p>
                 </div>
-              </div>
-            );
-          })()}
+              ) : room.phase === "voting" ? (
+                <div className="text-center py-1">
+                  <div className="text-xl mb-1">🗳️</div>
+                  <p className="font-bold text-sm" style={{ color: "#CE93D8" }}>Hội đồng đang biểu quyết...</p>
+                </div>
+              ) : room.phase === "quiz" ? (
+                <div className="text-center py-1">
+                  <div className="text-xl mb-1">❓</div>
+                  <p className="font-bold text-sm" style={{ color: "var(--gold-400)" }}>
+                    {quizOwnerName} đang trả lời câu hỏi thâu tóm...
+                  </p>
+                </div>
+              ) : currentPlayer ? (
+                <>
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <div
+                      className={`w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-base ${tokenColors[currentPlayer.id] ?? "bg-white"}`}
+                      style={{ boxShadow: "0 0 0 2px rgba(255,255,255,0.15)" }}
+                    >
+                      {currentPlayer.role === "vietnam" ? <VietnamFlagIcon size={18} /> : currentPlayer.role === "financial_capital" ? "💰" : "🌏"}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: isMyTurn ? "#40E090" : "var(--text-secondary)" }}>
+                        {isMyTurn ? "🎮 Đang tới lượt bạn" : "Đang tới lượt"}
+                      </p>
+                      <p className="text-sm font-bold truncate text-white">{currentPlayer.name}</p>
+                    </div>
+                  </div>
 
-          {/* Activity log */}
+                  <div className="grid grid-cols-3 gap-1.5 mb-3 text-center">
+                    <div className="rounded-lg py-1.5" style={{ background: "rgba(255,255,255,0.03)" }}>
+                      <div className="text-[9px] flex items-center justify-center gap-1" style={{ color: "var(--text-secondary)" }}>
+                        <MoneyIcon /> Tiền
+                      </div>
+                      <div className="text-xs font-bold" style={{ color: "#00E676", fontFamily: "var(--font-code)" }}>
+                        ${currentPlayer.money.toLocaleString()}
+                      </div>
+                    </div>
+                    <div className="rounded-lg py-1.5" style={{ background: "rgba(255,255,255,0.03)" }}>
+                      <div className="text-[9px] flex items-center justify-center gap-1" style={{ color: "var(--text-secondary)" }}>
+                        <AutonomyIcon /> Tự chủ
+                      </div>
+                      <div className="text-xs font-bold" style={{ color: "#42A5F5", fontFamily: "var(--font-code)" }}>
+                        {currentPlayer.autonomy}
+                      </div>
+                    </div>
+                    <div className="rounded-lg py-1.5" style={{ background: "rgba(255,255,255,0.03)" }}>
+                      <div className="text-[9px] flex items-center justify-center gap-1" style={{ color: "var(--text-secondary)" }}>
+                        <PowerIcon /> Q.lực
+                      </div>
+                      <div className="text-xs font-bold" style={{ color: "#CE93D8", fontFamily: "var(--font-code)" }}>
+                        {currentPlayer.softPower}
+                      </div>
+                    </div>
+                  </div>
+
+                  {isMyTurn ? (
+                    !room.hasRolled ? (
+                      <>
+                        <button onClick={rollDice} className="btn-gold w-full py-2.5 text-sm">🎲 Tung Xúc Xắc</button>
+                        {myPlayer && myPlayer.skipTurns > 0 ? (
+                          <p className="text-center text-[10px] mt-1.5" style={{ color: "#FF6B7A" }}>
+                            🚧 Đang đình trệ — còn {myPlayer.skipTurns} lượt
+                          </p>
+                        ) : (
+                          <p className="text-center text-[10px] mt-1.5" style={{ color: "rgba(139,163,204,0.5)" }}>
+                            Tung xúc xắc để di chuyển
+                          </p>
+                        )}
+                      </>
+                    ) : pendingMove ? (
+                      <p className="text-center text-xs animate-pulse py-1.5" style={{ color: "var(--gold-400)" }}>
+                        👆 Bấm vào biểu tượng để di chuyển!
+                      </p>
+                    ) : landingCell || lastCard || quizSession || lastQuizResult ? (
+                      <p className="text-center text-xs py-1.5" style={{ color: "var(--text-secondary)" }}>
+                        📖 Đọc thông tin rồi bấm &quot;Đã hiểu&quot;...
+                      </p>
+                    ) : (
+                      <>
+                        <button
+                          onClick={endTurn}
+                          disabled={room.phase === "voting" || room.phase === "quiz"}
+                          className="btn-green w-full py-2.5 text-sm"
+                        >
+                          {room.phase === "voting" ? "⏳ Chờ kết quả biểu quyết..."
+                            : room.phase === "quiz" ? "⏳ Chờ trả lời quiz..."
+                            : "✓ Kết Thúc Lượt"}
+                        </button>
+                        <p className="text-center text-[10px] mt-1.5" style={{ color: "rgba(139,163,204,0.5)" }}>
+                          Đã đến ô — nhấn kết thúc để chuyển lượt
+                        </p>
+                      </>
+                    )
+                  ) : (
+                    <p className="text-center text-xs py-1.5" style={{ color: "var(--text-secondary)" }}>
+                      Đang chờ {currentPlayer.name} tung xúc xắc...
+                    </p>
+                  )}
+                </>
+              ) : null}
+            </div>
+          )}
+
+          {/* Activity log — kept small and right under the turn card (instead of
+              at the bottom) so it's visible without scrolling the sidebar. */}
           <div
             className="rounded-2xl flex flex-col overflow-hidden"
             style={{
               background: "var(--bg-surface-1)",
               border: "1px solid var(--border-subtle)",
-              minHeight: "200px",
-              maxHeight: "360px",
+              height: "110px",
             }}
           >
             <div
-              className="px-3 py-2 flex-shrink-0"
+              className="px-3 py-1.5 flex-shrink-0"
               style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}
             >
               <h3 className="text-[10px] font-bold uppercase tracking-widest"
                 style={{ color: "var(--text-secondary)" }}>
-                📜 Nhật Ký
+                📜 Diễn Biến
               </h3>
             </div>
-            <div ref={logRef} className="flex-1 overflow-y-auto p-3 space-y-1 text-xs">
+            <div ref={logRef} className="flex-1 overflow-y-auto px-3 py-1.5 space-y-1 text-[11px]">
               {room.log.length === 0 ? (
                 <p className="italic" style={{ color: "rgba(139,163,204,0.35)" }}>
                   Chưa có sự kiện...
@@ -2457,50 +2143,77 @@ export default function RoomPage() {
             </div>
           </div>
 
-          {/* Scoreboard */}
-          <div
-            className="rounded-2xl p-3"
-            style={{
-              background: "var(--bg-surface-1)",
-              border: "1px solid var(--border-subtle)",
-            }}
-          >
-            <h3 className="text-[10px] font-bold uppercase tracking-widest mb-2.5"
-              style={{ color: "var(--text-secondary)" }}>
-              🏆 Bảng Điểm
-            </h3>
-            <div className="space-y-1.5">
+          {/* Leaderboard — merges old player-list + scoreboard panels */}
+          <div className="rounded-2xl p-3" style={{ background: "var(--bg-surface-1)", border: "1px solid var(--border-subtle)" }}>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--text-secondary)" }}>
+                🏆 Bảng Điểm
+              </h3>
+              <span className="text-[9px]" style={{ color: "rgba(139,163,204,0.5)" }}>{room.players.length} người</span>
+            </div>
+            <div className="space-y-1">
               {sortedScores.map((p, i) => (
-                <div
+                <ScoreRow
                   key={p.id}
-                  className="flex items-center gap-2 text-xs py-1 px-2 rounded-lg"
-                  style={{
-                    background: i === 0 ? "rgba(232,185,35,0.06)" : "transparent",
-                    borderLeft: i === 0 ? "2px solid rgba(232,185,35,0.4)" : "2px solid transparent",
-                  }}
-                >
-                  <span style={{ color: i === 0 ? "var(--gold-300)" : i === 1 ? "#C0C0C0" : i === 2 ? "#CD7F32" : "var(--text-secondary)" }}>
-                    {["🥇","🥈","🥉"][i] ?? `${i+1}.`}
-                  </span>
-                  <div
-                    className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${tokenColors[p.id]}`}
-                  />
-                  <span className="truncate flex-1" style={{ color: "rgba(240,244,255,0.9)" }}>
-                    {p.name}
-                  </span>
-                  <span
-                    className="font-bold flex-shrink-0"
-                    style={{
-                      color: i === 0 ? "var(--gold-400)" : "var(--text-secondary)",
-                      fontFamily: "var(--font-code)",
-                    }}
-                  >
-                    {p.score}pt
-                  </span>
-                </div>
+                  rank={i + 1}
+                  player={p}
+                  score={p.score}
+                  isCurrent={room.phase !== "waiting" && currentPlayer?.id === p.id}
+                  isMe={p.socketId === socket?.id}
+                  tokenColor={tokenColors[p.id] ?? "bg-white"}
+                />
               ))}
             </div>
+            <p className="mt-2 pt-2 text-[10px]" style={{ borderTop: "1px solid rgba(255,255,255,0.05)", color: "rgba(139,163,204,0.5)" }}>
+              Điểm = Tiền + Tài sản + Tự chủ×10 + Sức mạnh×5 &nbsp;·&nbsp;{" "}
+              <span style={{ color: "#FF6B7A" }}>Tự chủ = 0 → thua</span>
+            </p>
           </div>
+
+          {/* Post-game discussion — the full ranking already lives in the
+              leaderboard above and in GameOverModal, so this panel only adds
+              the reflection questions instead of repeating scores. */}
+          {room.phase === "finished" && (
+            <div
+              className="rounded-2xl p-4 space-y-2"
+              style={{ background: "var(--bg-surface-1)", border: "1px solid var(--border-subtle)" }}
+            >
+              <p className="font-bold text-xs uppercase tracking-widest" style={{ color: "var(--gold-400)" }}>
+                📚 Thảo Luận Sau Game
+              </p>
+              <p className="text-white text-xs font-semibold leading-relaxed">
+                Theo lý luận Lênin về tư bản tài chính:
+              </p>
+              <ul className="space-y-2 text-xs leading-relaxed" style={{ color: "rgba(139,163,204,0.9)" }}>
+                <li>• Tại sao <span style={{ color: "var(--gold-300)", fontWeight: 600 }}>Tư bản tài chính</span> lại có lợi thế trên hầu hết ô bàn cờ?</li>
+                <li>• <span style={{ color: "#40E090", fontWeight: 600 }}>Việt Nam</span> dùng công cụ gì để giảm thiểu tác động?</li>
+                <li>• <span style={{ color: "#70B8FF", fontWeight: 600 }}>Nước đang phát triển</span> có nên từ chối tất cả dòng vốn nước ngoài không?</li>
+                <li>• Trong biểu quyết Hội đồng Tư vấn, lựa chọn nào phản ánh lợi ích quốc gia dài hạn?</li>
+              </ul>
+              <p
+                className="text-xs mt-2 pt-2 italic"
+                style={{ borderTop: "1px solid rgba(255,255,255,0.06)", color: "rgba(139,163,204,0.5)" }}
+              >
+                &ldquo;Không chỉ tích lũy tư bản — phải giữ chủ quyền kinh tế!&rdquo; — Lênin (1916)
+              </p>
+            </div>
+          )}
+
+          {/* Bottom action */}
+          <button
+            onClick={() => setShowLeaveConfirm(true)}
+            className="w-full py-2.5 rounded-xl text-xs font-medium transition-all"
+            style={{
+              border: "1px solid rgba(255,255,255,0.12)",
+              color: "var(--text-secondary)",
+              background: "rgba(255,255,255,0.02)",
+              cursor: "pointer",
+            }}
+            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.06)"}
+            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.02)"}
+          >
+            ↺ Ván Mới / Thoát
+          </button>
         </div>
       </div>
       </div>

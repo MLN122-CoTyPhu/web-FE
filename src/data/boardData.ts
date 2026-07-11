@@ -270,7 +270,7 @@ export const BOARD_CELLS: BoardCellFull[] = [
     },
   },
   {
-    id: 3, name: "🇻🇳 Việt Nam — Điều Tiết Nhà Nước", type: "vietnam",
+    id: 3, name: "Việt Nam — Điều Tiết Nhà Nước", type: "vietnam",
     description: "Rút thẻ Chính sách Nhà nước. Nhà nước Việt Nam chủ động bảo vệ nền kinh tế.",
     effect: { drawCard: true, drawCardType: "state_policy" },
     knowledge: {
@@ -318,7 +318,7 @@ export const BOARD_CELLS: BoardCellFull[] = [
     },
   },
   {
-    id: 8, name: "🇻🇳 Việt Nam — Thu Hút Đầu Tư Trực Tiếp Nước Ngoài Công Nghệ Cao", type: "vietnam",
+    id: 8, name: "Việt Nam — Thu Hút Đầu Tư Trực Tiếp Nước Ngoài Công Nghệ Cao", type: "vietnam",
     description: "Rút thẻ Toàn cầu hóa. Chủ động thu hút FDI chất lượng cao để chuyển đổi cơ cấu.",
     effect: { drawCard: true, drawCardType: "globalization" },
     knowledge: {
@@ -375,7 +375,7 @@ export const BOARD_CELLS: BoardCellFull[] = [
     },
   },
   {
-    id: 14, name: "🇻🇳 Việt Nam — Hàng Rào Thuế Quan Bảo Hộ", type: "vietnam",
+    id: 14, name: "Việt Nam — Hàng Rào Thuế Quan Bảo Hộ", type: "vietnam",
     description: "Rút thẻ Chính sách Nhà nước. Nhà nước dùng thuế hạn chế sức mạnh độc quyền nước ngoài.",
     effect: { drawCard: true, drawCardType: "state_policy" },
     knowledge: {
@@ -422,7 +422,7 @@ export const BOARD_CELLS: BoardCellFull[] = [
     },
   },
   {
-    id: 19, name: "🇻🇳 Việt Nam — Nhận Diện Chiến Lược Biên Giới Mềm", type: "vietnam",
+    id: 19, name: "Việt Nam — Nhận Diện Chiến Lược Biên Giới Mềm", type: "vietnam",
     description: "Rút thẻ Chính sách Nhà nước. Nhận diện và cảnh giác với bành trướng kinh tế núp bóng đầu tư.",
     effect: { drawCard: true, drawCardType: "state_policy" },
     knowledge: {
@@ -460,7 +460,7 @@ export const BOARD_CELLS: BoardCellFull[] = [
     },
   },
   {
-    id: 23, name: "🇻🇳 Việt Nam — Xây Dựng Năng Lực Nội Sinh Và Tập Đoàn Quốc Gia", type: "vietnam",
+    id: 23, name: "Việt Nam — Xây Dựng Năng Lực Nội Sinh Và Tập Đoàn Quốc Gia", type: "vietnam",
     description: "Rút thẻ Chính sách Nhà nước. Khuyến khích tập đoàn trong nước đủ mạnh để cạnh tranh.",
     effect: { drawCard: true, drawCardType: "state_policy" },
     knowledge: {
@@ -498,7 +498,7 @@ export const BOARD_CELLS: BoardCellFull[] = [
     },
   },
   {
-    id: 27, name: "🇻🇳 Việt Nam — Liên Kết Kinh Tế Khu Vực ASEAN Và RCEP", type: "vietnam",
+    id: 27, name: "Việt Nam — Liên Kết Kinh Tế Khu Vực ASEAN Và RCEP", type: "vietnam",
     description: "Rút thẻ Toàn cầu hóa. Tham gia ASEAN, RCEP — liên kết khu vực bảo vệ không gian phát triển.",
     effect: { drawCard: true, drawCardType: "globalization" },
     knowledge: {
@@ -546,7 +546,7 @@ export const BOARD_CELLS: BoardCellFull[] = [
     },
   },
   {
-    id: 32, name: "🇻🇳 Việt Nam — Bảo Hộ Công Nghệ Tài Chính Nội Địa", type: "vietnam",
+    id: 32, name: "Việt Nam — Bảo Hộ Công Nghệ Tài Chính Nội Địa", type: "vietnam",
     description: "Rút thẻ Chính sách Nhà nước. Xây dựng hệ sinh thái Fintech nội địa tự chủ.",
     effect: { drawCard: true, drawCardType: "state_policy" },
     knowledge: {
@@ -584,7 +584,7 @@ export const BOARD_CELLS: BoardCellFull[] = [
     },
   },
   {
-    id: 36, name: "🇻🇳 Việt Nam — Điều Hành Chính Sách Tiền Tệ Và Tín Dụng", type: "vietnam",
+    id: 36, name: "Việt Nam — Điều Hành Chính Sách Tiền Tệ Và Tín Dụng", type: "vietnam",
     description: "Rút thẻ Chính sách Nhà nước. Nhà nước dùng tiền tệ và tín dụng bảo vệ kinh tế vĩ mô.",
     effect: { drawCard: true, drawCardType: "state_policy" },
     knowledge: {
@@ -623,15 +623,23 @@ export const BOARD_CELLS: BoardCellFull[] = [
   },
 ];
 
+// Bộ màu trầm, tông đỏ cờ + vàng học thuật (theo yêu cầu) — thay cho bảng màu
+// Tailwind mặc định (đỏ/cam/tím/xanh tươi) trước đây trông chói và lệch tông
+// so với phần Nội Dung.
+//
+// Kiểu tô: nền TRẦM (tối) riêng theo loại ô + viền cùng tông nhưng đậm/rõ hơn
+// một chút để phân định — đúng theo spec "nền trầm, không dùng màu tươi/sáng".
+// Thanh 4px ở mép trên mỗi ô (xem STRIP_COLORS trong room/[id]/page.tsx) dùng
+// lại đúng các mã hex "border" bên dưới làm dấu hiệu loại ô nổi bật hơn.
 export const CELL_COLORS: Record<string, string> = {
-  financial_capital: "bg-red-900 border-red-700 text-red-100",
-  conglomerate:      "bg-orange-900 border-orange-700 text-orange-100",
-  consortium:        "bg-purple-900 border-purple-700 text-purple-100",
-  tnc:               "bg-blue-900 border-blue-700 text-blue-100",
-  vietnam:           "bg-green-900 border-green-600 text-green-100",
-  crisis:            "bg-neutral-950 border-red-900 text-red-200",
-  start:             "bg-yellow-600 border-yellow-400 text-yellow-900",
-  free:              "bg-slate-700 border-slate-500 text-slate-200",
+  financial_capital: "bg-[#5c1512] border-[#a02820] text-[#ffd9d4]",
+  conglomerate:      "bg-[#5c3410] border-[#b0621a] text-[#ffe3c2]",
+  consortium:        "bg-[#3d1f4d] border-[#7a3d94] text-[#ecd2f7]",
+  tnc:               "bg-[#152b45] border-[#2f5f95] text-[#cfe1f7]",
+  vietnam:           "bg-[#123821] border-[#1f7a45] text-[#c7f0d5]",
+  crisis:            "bg-[#1a1310] border-[#8a1a12] text-[#f0c6c0]",
+  start:             "bg-[#5c4a10] border-[#d4af1f] text-[#fff3c4]",
+  free:              "bg-[#2a2f38] border-[#5a6474] text-[#dbe2ec]",
 };
 
 export const CELL_TYPE_LABELS: Record<string, string> = {

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
 function StarIcon() {
   return (
@@ -47,6 +48,30 @@ export default function SiteNav() {
   const pathname = usePathname();
   const isContent = pathname?.startsWith("/noi-dung");
 
+  // Thanh nav "fixed" đè lên chữ khi cuộn trang dài (Nội Dung) — tự ẩn khi
+  // cuộn xuống, hiện lại ngay khi cuộn lên hoặc gần đầu trang, để nhường chỗ
+  // đọc nội dung thay vì che mất dòng đầu mỗi đoạn.
+  const [hidden, setHidden] = useState(false);
+  const lastY = useRef(0);
+
+  useEffect(() => {
+    lastY.current = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      const diff = y - lastY.current;
+      if (y < 80) {
+        setHidden(false);
+      } else if (diff > 4) {
+        setHidden(true);
+      } else if (diff < -4) {
+        setHidden(false);
+      }
+      lastY.current = y;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   const pillStyle = (active: boolean) => ({
     fontFamily: "var(--font-content-sans, 'Inter', sans-serif)",
     fontSize: "13px",
@@ -60,11 +85,12 @@ export default function SiteNav() {
 
   return (
     <nav
-      className="fixed top-0 left-0 right-0 z-[200]"
+      className="fixed top-0 left-0 right-0 z-[200] transition-transform duration-300 ease-out"
       style={{
         background: "rgba(15,10,8,0.96)",
         borderBottom: "2px solid #c1121f",
         backdropFilter: "blur(10px)",
+        transform: hidden ? "translateY(-100%)" : "translateY(0)",
       }}
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3">

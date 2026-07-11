@@ -206,42 +206,98 @@ export default function NoiDungPage() {
       </header>
 
       {/* ── Article body ──────────────────────────────────────── */}
-      <main className="max-w-3xl mx-auto px-5 pb-10">
-        {/* PHẦN I */}
+      <main className="max-w-6xl mx-auto px-5 pb-10">
+        {/* PHẦN I — bố cục 2 cột (chữ trái / ảnh phải) riêng cho phần mở đầu,
+            theo đúng mẫu tham khảo. Các phần còn lại vẫn giữ layout 1 cột hẹp
+            (max-w-3xl) như trước để dễ đọc — bọc riêng bên dưới. */}
         <section id="phan-1" className="pt-14 scroll-mt-24">
           <SectionHeading
             number={1}
             title="Lý luận của Lênin về tư bản tài chính trong kỷ nguyên toàn cầu hóa"
           />
 
-          <TermParagraph term="Sự hình thành tư bản tài chính.">
-            Theo V.I. Lênin, tư bản tài chính là kết quả của sự hợp nhất giữa tư bản ngân hàng của một số ít ngân
-            hàng độc quyền lớn nhất với tư bản của những liên minh độc quyền các nhà công nghiệp. Quá trình này bắt
-            nguồn từ sự tích tụ và tập trung sản xuất, dẫn đến việc các ngân hàng không còn đơn thuần là trung gian
-            thanh toán mà trở thành những thực thể quyền lực chi phối toàn bộ đời sống kinh tế.
-          </TermParagraph>
+          <div className="grid md:grid-cols-2 gap-10 md:gap-14 items-start">
+            {/* Cột chữ */}
+            <div>
+              <SubHeading>Sự hình thành tư bản tài chính</SubHeading>
 
-          <SubHeading>Sự kết hợp Công nghiệp – Thương nghiệp – Ngân hàng trong toàn cầu hóa</SubHeading>
-          <ItemList
-            items={[
-              {
-                title: "Consortium & Conglomerate",
-                desc:
-                  "Hình thức độc quyền đa ngành (Consortium) thường do một ngân hàng lớn đứng đầu; tập đoàn đa ngành (Conglomerate) thâu tóm các xí nghiệp ở những lĩnh vực hoàn toàn khác nhau.",
-              },
-              {
-                title: "Công ty Xuyên quốc gia (TNCs)",
-                desc:
-                  "Chủ thể chủ yếu trong đầu tư trực tiếp và xuất khẩu tư bản, tạo mạng lưới sản xuất – lưu thông toàn cầu.",
-              },
-              {
-                title: "Liên minh nhân sự (Personal Union)",
-                desc:
-                  "Đại diện tập đoàn độc quyền tham gia bộ máy nhà nước và ngược lại, tạo hệ thống điều tiết thống nhất phục vụ lợi ích tài phiệt.",
-              },
-            ]}
-          />
+              <Lead>
+                Theo lý luận của V.I. Lênin,{" "}
+                <strong style={{ color: "var(--content-text)", fontWeight: 700 }}>
+                  tư bản tài chính là kết quả của sự hợp nhất giữa tư bản ngân hàng
+                </strong>{" "}
+                của một số ít ngân hàng độc quyền lớn nhất với tư bản của những liên minh độc quyền các nhà công
+                nghiệp. Quá trình này bắt nguồn từ sự tích tụ và tập trung sản xuất, dẫn đến việc các ngân hàng
+                không còn đơn thuần là trung gian thanh toán mà trở thành những thực thể quyền lực chi phối toàn
+                bộ đời sống kinh tế.
+              </Lead>
+
+              {/* Trích dẫn */}
+              <blockquote
+                className="my-6"
+                style={{
+                  borderLeft: "3px solid var(--content-gold)",
+                  paddingLeft: "22px",
+                }}
+              >
+                <p
+                  className="content-serif"
+                  style={{ fontStyle: "italic", fontSize: "17px", lineHeight: 1.7, color: "var(--content-text)" }}
+                >
+                  &ldquo;Tư bản tài chính là kết quả của sự hợp nhất giữa tư bản ngân hàng của một số ít ngân hàng độc quyền lớn nhất, với tư bản của những liên minh độc quyền các nhà công nghiệp&rdquo;
+                </p>
+                <p style={{ marginTop: "8px", fontSize: "14px", color: "var(--content-text-secondary)" }}>
+                  — V.I. Lênin,{" "}
+                  <em>Chủ nghĩa đế quốc — giai đoạn tột cùng của chủ nghĩa tư bản</em> (1916)
+                </p>
+              </blockquote>
+            </div>
+
+            {/* Cột ảnh */}
+            <div className="md:sticky md:top-24">
+              <img
+                src="/anh2.png"
+                alt="Minh hoạ tư bản tài chính toàn cầu hóa"
+                className="w-full h-auto rounded-2xl"
+                style={{ border: "1px solid var(--content-hairline)", boxShadow: "0 24px 60px rgba(0,0,0,0.5)" }}
+              />
+            </div>
+          </div>
+
+          {/* Khối này thoát khỏi layout 2 cột, căn giữa full-width như Phần 2 */}
+          <div className="max-w-3xl mx-auto mt-14">
+            <SubHeading>Sự kết hợp Công nghiệp – Thương nghiệp – Ngân hàng</SubHeading>
+
+            <Lead>
+              Trong kỷ nguyên toàn cầu hóa, sự kết hợp này không chỉ dừng lại ở công nghiệp và ngân hàng mà còn
+              mở rộng sang thương nghiệp và dịch vụ:
+            </Lead>
+
+            <ItemList
+              items={[
+                {
+                  title: "Consortium & Conglomerate",
+                  desc:
+                    "Hình thức độc quyền đa ngành (Consortium) thường do một ngân hàng lớn đứng đầu, thực hiện nghiệp vụ tài chính khổng lồ kết nối nhiều lĩnh vực; tập đoàn đa ngành (Conglomerate) thâu tóm các xí nghiệp ở những lĩnh vực hoàn toàn khác nhau.",
+                },
+                {
+                  title: "Công ty Xuyên quốc gia (TNCs)",
+                  desc:
+                    "Là chủ thể chủ yếu trong đầu tư trực tiếp và xuất khẩu tư bản, tạo nên mạng lưới sản xuất và lưu thông toàn cầu.",
+                },
+                {
+                  title: "Liên minh nhân sự (Personal Union)",
+                  desc:
+                    "Sự kết hợp không chỉ ở vốn mà còn ở nhân sự — đại diện tập đoàn độc quyền tham gia bộ máy nhà nước và ngược lại, tạo hệ thống điều tiết phục vụ lợi ích tầng lớp tài phiệt.",
+                },
+              ]}
+            />
+          </div>
         </section>
+
+        {/* Từ đây trở đi giữ nguyên layout 1 cột hẹp như trước (max-w-3xl,
+            căn giữa trong khung max-w-6xl mới của <main>). */}
+        <div className="max-w-3xl mx-auto">
 
         {/* PHẦN II */}
         <section id="phan-2" className="pt-14 scroll-mt-24">
@@ -343,6 +399,8 @@ export default function NoiDungPage() {
         <p className="text-center pb-8" style={{ fontSize: "12px", color: "var(--content-text-muted)" }}>
           Chương 4 · Kinh tế chính trị Mác–Lênin — tài liệu học tập nội bộ
         </p>
+
+        </div>
       </main>
     </div>
   );
