@@ -17,6 +17,14 @@ function ownedAssetValue(player: Player): number {
 function computeScore(player: Player): number {
   return player.money + ownedAssetValue(player) + player.autonomy * 10 + player.softPower * 5;
 }
+// Luật đã công bố: "Tự chủ = 0 → thua ngay lập tức, dù nhiều tiền/tài sản nhất" —
+// người mất hoàn toàn tự chủ luôn rớt xuống cuối bảng xếp hạng, bất kể điểm số.
+function compareByRank<T extends { autonomy: number; score: number }>(a: T, b: T): number {
+  const aLost = a.autonomy <= 0;
+  const bLost = b.autonomy <= 0;
+  if (aLost !== bLost) return aLost ? 1 : -1;
+  return b.score - a.score;
+}
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -1365,7 +1373,7 @@ function GameOverModal({
 }) {
   const sorted = [...players]
     .map(p => ({ ...p, score: computeScore(p) }))
-    .sort((a, b) => b.score - a.score);
+    .sort(compareByRank);
 
   // Players eliminated by autonomy reaching 0
   const eliminated = players.filter(p => !p.isActive || p.autonomy <= 0);
@@ -1735,7 +1743,7 @@ export default function RoomPage() {
 
   const sortedScores = [...room.players]
     .map(p => ({ ...p, score: computeScore(p) }))
-    .sort((a, b) => b.score - a.score);
+    .sort(compareByRank);
 
   const quizOwnerName = quizSession
     ? room.players.find(p => p.id === quizSession.playerId)?.name ?? "?"
