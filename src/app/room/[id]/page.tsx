@@ -207,8 +207,8 @@ function PlayerPanel({
             color: "#FF6B7A",
           }}
         >
-          <span>⛓</span>
-          <span>BỊ KIỂM SOÁT — còn {player.skipTurns} lượt</span>
+          <span>🚧</span>
+          <span>ĐÌNH TRỆ SẢN XUẤT — còn {player.skipTurns} lượt</span>
         </div>
       )}
 
@@ -1293,9 +1293,9 @@ function RulesModal({ onClose }: { onClose: () => void }) {
             <div className="space-y-2">
               <div className="rounded-xl px-3 py-2.5"
                 style={{ background: "rgba(255,23,68,0.08)", border: "1px solid rgba(255,23,68,0.25)" }}>
-                <div className="font-bold text-xs" style={{ color: "#FF6B7A" }}>🚨 Ô 30 — Bị Chi Phối Hoàn Toàn</div>
+                <div className="font-bold text-xs" style={{ color: "#FF6B7A" }}>🚧 Ô 30 — Đình Trệ Sản Xuất</div>
                 <div className="text-xs mt-1" style={{ color: "rgba(255,107,122,0.8)" }}>
-                  −40 Tự chủ &nbsp;·&nbsp; −20 Quyền lực mềm &nbsp;·&nbsp; Bỏ 2 lượt tiếp theo
+                  −40 Tự chủ &nbsp;·&nbsp; −20 Sức mạnh &nbsp;·&nbsp; 2 lượt không thu phí thuê / không thâu tóm được ô mới (vẫn di chuyển và biểu quyết bình thường)
                 </div>
               </div>
               <div className="rounded-xl px-3 py-2.5"
@@ -2195,31 +2195,23 @@ export default function RoomPage() {
                 {room.phase !== "waiting" && room.phase !== "finished" && isMyTurn && (
                   <div className="space-y-1.5 w-full px-3 sm:px-6">
                     {!room.hasRolled ? (
-                      myPlayer && myPlayer.skipTurns > 0 ? (
-                        <>
-                          <button
-                            onClick={rollDice}
-                            className="btn-red w-full py-2 sm:py-2.5 text-sm"
-                          >
-                            ⛓️ Bị Chi Phối — Bỏ Lượt
-                          </button>
+                      <>
+                        <button
+                          onClick={rollDice}
+                          className="btn-gold w-full py-2 sm:py-2.5 text-sm sm:text-base"
+                        >
+                          🎲 Tung Xúc Xắc
+                        </button>
+                        {myPlayer && myPlayer.skipTurns > 0 ? (
                           <p className="text-center text-[10px]" style={{ color: "#FF6B7A" }}>
-                            Đang bị chi phối — còn {myPlayer.skipTurns} lượt bị phạt
+                            🚧 Đang đình trệ — không thu phí/thâu tóm được (còn {myPlayer.skipTurns} lượt)
                           </p>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            onClick={rollDice}
-                            className="btn-gold w-full py-2 sm:py-2.5 text-sm sm:text-base"
-                          >
-                            🎲 Tung Xúc Xắc
-                          </button>
+                        ) : (
                           <p className="text-center text-[10px]" style={{ color: "rgba(139,163,204,0.5)" }}>
                             Tung xúc xắc để di chuyển
                           </p>
-                        </>
-                      )
+                        )}
+                      </>
                     ) : pendingMove ? (
                       <p className="text-center text-sm animate-pulse py-1.5"
                         style={{ color: "var(--gold-400)" }}>
@@ -2293,20 +2285,16 @@ export default function RoomPage() {
               }}
             >
               {!room.hasRolled ? (
-                myPlayer && myPlayer.skipTurns > 0 ? (
-                  <>
-                    <button onClick={rollDice} className="btn-red w-full py-3">
-                      ⛓️ Bị Chi Phối — Bỏ Lượt
-                    </button>
-                    <p className="text-center text-xs" style={{ color: "#FF6B7A" }}>
-                      Còn {myPlayer.skipTurns} lượt bị phạt
-                    </p>
-                  </>
-                ) : (
+                <>
                   <button onClick={rollDice} className="btn-gold w-full py-3 text-base">
                     🎲 Tung Xúc Xắc
                   </button>
-                )
+                  {myPlayer && myPlayer.skipTurns > 0 && (
+                    <p className="text-center text-xs" style={{ color: "#FF6B7A" }}>
+                      🚧 Đình trệ — còn {myPlayer.skipTurns} lượt
+                    </p>
+                  )}
+                </>
               ) : pendingMove ? (
                 <p className="text-center text-sm animate-pulse py-1" style={{ color: "var(--gold-400)" }}>
                   👆 Bấm vào biểu tượng để di chuyển!

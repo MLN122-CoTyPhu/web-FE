@@ -527,8 +527,8 @@ export const BOARD_CELLS: BoardCellFull[] = [
     },
   },
   {
-    id: 30, name: "🚨 Bị Chi Phối Hoàn Toàn Về Kinh Tế Và Chính Trị", type: "crisis",
-    description: "Mất 2 lượt — bị chi phối hoàn toàn cả về kinh tế lẫn chính trị.",
+    id: 30, name: "🚧 Đình Trệ Sản Xuất", type: "crisis",
+    description: "Vẫn di chuyển bình thường nhưng không thể thu phí thuê hay thâu tóm ô mới trong 2 lượt (vẫn được biểu quyết Hội đồng).",
     effect: { autonomy: -40, softPower: -20 },
     knowledge: {
       concept: "Chi phối kinh tế dẫn đến chi phối chính trị",
