@@ -1,12 +1,33 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useGameSocket } from "@/hooks/useGameSocket";
 import type { PlayerRole } from "@/types/game";
 import SiteNav from "@/components/SiteNav";
+import { RulesModal } from "@/components/GameRulesModal";
 
-const ROLE_OPTIONS: { value: PlayerRole; label: string; desc: string; icon: string; accent: string; border: string }[] = [
+// Windows renders the 🇻🇳 flag emoji as raw "VN" letters (no flag glyph in the
+// default font), while 💰/🌏 render fine everywhere. Draw the flag as inline
+// SVG instead so the "Việt Nam" role always shows an actual flag icon.
+function VietnamFlagIcon({ size = 22 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size * (2 / 3)}
+      viewBox="0 0 30 20"
+      style={{ display: "block", borderRadius: 2, boxShadow: "0 0 0 1px rgba(0,0,0,0.25)" }}
+    >
+      <rect width="30" height="20" fill="#DA251D" />
+      <polygon
+        points="15,3 16.65,7.74 21.66,7.84 17.66,10.87 19.11,15.66 15,12.8 10.89,15.66 8.34,10.87 8.34,7.84 13.35,7.74"
+        fill="#FFCD00"
+      />
+    </svg>
+  );
+}
+
+const ROLE_OPTIONS: { value: PlayerRole; label: string; desc: string; icon: ReactNode; accent: string; border: string }[] = [
   {
     value: "developing_country",
     label: "Nước Đang Phát Triển",
@@ -19,7 +40,7 @@ const ROLE_OPTIONS: { value: PlayerRole; label: string; desc: string; icon: stri
     value: "vietnam",
     label: "Việt Nam",
     desc: "Điều tiết nhà nước — thẻ ưu tiên",
-    icon: "🇻🇳",
+    icon: <VietnamFlagIcon size={22} />,
     accent: "rgba(0,200,83,0.15)",
     border: "#00C853",
   },
@@ -72,6 +93,9 @@ export default function Home() {
   const [playerName, setPlayerName] = useState("");
   const [roomCode, setRoomCode] = useState("");
   const [role, setRole] = useState<PlayerRole>("developing_country");
+  // Người chơi có thể đọc luật ngay trên trang chủ, trước khi tạo/vào phòng —
+  // không còn phải đợi vào tận phòng chờ mới xem được luật chơi.
+  const [showRules, setShowRules] = useState(false);
 
   useEffect(() => {
     if (room) {
@@ -92,6 +116,7 @@ export default function Home() {
   return (
     <>
       <SiteNav />
+      {showRules && <RulesModal onClose={() => setShowRules(false)} />}
       <div
       className="min-h-screen flex items-center justify-center p-4 pt-24 relative overflow-hidden"
       style={{ background: "radial-gradient(ellipse at 50% 40%, #2a1710 0%, #17100e 70%)" }}
@@ -161,6 +186,22 @@ export default function Home() {
                 }}
               >
                 ◈ Vào Phòng Có Sẵn
+              </button>
+
+              {/* Rules — readable before creating/joining a room, not just
+                  once already inside a match. */}
+              <button
+                onClick={() => setShowRules(true)}
+                className="w-full py-2.5 rounded-xl text-sm transition-all"
+                style={{
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  color: "var(--text-secondary)",
+                }}
+                onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.07)"}
+                onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.03)"}
+              >
+                📖 Luật Chơi
               </button>
 
               {/* Game info */}
