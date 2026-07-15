@@ -34,6 +34,7 @@ const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000"
 
 export function useGameSocket(): UseGameSocketReturn {
   const socketRef = useRef<GameSocket | null>(null);
+  const [socket, setSocket] = useState<GameSocket | null>(null);
   const [room, setRoom] = useState<GameRoom | null>(null);
   const [lastCard, setLastCard] = useState<EventCard | null>(null);
   const [voteSession, setVoteSession] = useState<VoteSession | null>(null);
@@ -45,12 +46,16 @@ export function useGameSocket(): UseGameSocketReturn {
 
   useEffect(() => {
     const socket: GameSocket = io(SOCKET_URL, {
+      reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
       timeout: 10000,
+      transports: ["websocket", "polling"],
     });
 
     socketRef.current = socket;
+    queueMicrotask(() => setSocket(socket));
 
     socket.on("connect", () => {
       setIsConnected(true);
@@ -63,8 +68,21 @@ export function useGameSocket(): UseGameSocketReturn {
       }
     });
 
-    socket.on("disconnect", () => {
+    socket.on("connect_error", (err) => {
+      console.error("Socket connect error:", err.message);
+    });
+
+    socket.io.on("reconnect_attempt", (attempt: number) => {
+      console.warn(`Socket reconnect attempt ${attempt}`);
+    });
+
+    socket.io.on("reconnect", (attempt: number) => {
+      console.log(`Socket reconnected after ${attempt} attempts`);
+    });
+
+    socket.on("disconnect", (reason) => {
       setIsConnected(false);
+      console.warn("Socket disconnected:", reason);
     });
 
     socket.on("room_state", (newRoom) => {
@@ -125,7 +143,7 @@ export function useGameSocket(): UseGameSocketReturn {
     return () => {
       socket.disconnect();
     };
-  }, []); // eslint-disable-line
+  }, []);
 
   const createRoom = useCallback((playerName: string, role: PlayerRole) => {
     localStorage.setItem("co_ty_phu_name", playerName);
@@ -181,7 +199,7 @@ export function useGameSocket(): UseGameSocketReturn {
   }, []);
 
   return {
-    socket: socketRef.current,
+    socket,
     room,
     lastCard,
     voteSession,
