@@ -31,29 +31,29 @@ function compareByRank<T extends { autonomy: number; score: number }>(a: T, b: T
 
 const TOKEN_COLORS = [
   "bg-yellow-400", "bg-pink-500", "bg-cyan-400",
-  "bg-lime-400",   "bg-purple-400", "bg-orange-400",
+  "bg-lime-400", "bg-purple-400", "bg-orange-400",
 ];
 
 // Maps Tailwind bg class → index for CSS glow classes
 const TOKEN_COLOR_TO_INDEX: Record<string, number> = {
   "bg-yellow-400": 0,
-  "bg-pink-500":   1,
-  "bg-cyan-400":   2,
-  "bg-lime-400":   3,
+  "bg-pink-500": 1,
+  "bg-cyan-400": 2,
+  "bg-lime-400": 3,
   "bg-purple-400": 4,
   "bg-orange-400": 5,
 };
 
 const ROLE_LABELS: Record<PlayerRole, string> = {
-  vietnam:             "🇻🇳 Việt Nam",
-  developing_country:  "🌏 Đang Phát Triển",
-  financial_capital:   "💰 Tư Bản Tài Chính",
+  vietnam: "🇻🇳 Việt Nam",
+  developing_country: "🌏 Đang Phát Triển",
+  financial_capital: "💰 Tư Bản Tài Chính",
 };
 
 const ROLE_COLORS: Record<string, string> = {
-  vietnam:            "#00C853",
+  vietnam: "#00C853",
   developing_country: "#1E90FF",
-  financial_capital:  "#FF8C00",
+  financial_capital: "#FF8C00",
 };
 
 // Monopoly perimeter positions (1-indexed CSS grid)
@@ -61,11 +61,11 @@ const CELL_POSITIONS: Array<{ row: number; col: number }> = [
   // Bottom row left→right: cells 0–10
   ...Array.from({ length: 11 }, (_, i) => ({ row: 11, col: i + 1 })),
   // Right col bottom→top: cells 11–19
-  ...Array.from({ length: 9 },  (_, i) => ({ row: 10 - i, col: 11 })),
+  ...Array.from({ length: 9 }, (_, i) => ({ row: 10 - i, col: 11 })),
   // Top row right→left: cells 20–30
   ...Array.from({ length: 11 }, (_, i) => ({ row: 1, col: 11 - i })),
   // Left col top→bottom: cells 31–39
-  ...Array.from({ length: 9 },  (_, i) => ({ row: 2 + i, col: 1 })),
+  ...Array.from({ length: 9 }, (_, i) => ({ row: 2 + i, col: 1 })),
 ];
 
 const CORNER_IDS = new Set([0, 10, 20, 30]);
@@ -101,13 +101,13 @@ function cellEffectLabel(cell: typeof BOARD_CELLS[0]): string | null {
 
 // Dice dot patterns: 3×3 grid (row-major), true = show dot
 const DICE_DOTS: Record<number, boolean[]> = {
-  0: [false,false,false, false,false,false, false,false,false],
-  1: [false,false,false, false,true, false, false,false,false],
-  2: [false,false,true,  false,false,false, true, false,false],
-  3: [false,false,true,  false,true, false, true, false,false],
-  4: [true, false,true,  false,false,false, true, false,true ],
-  5: [true, false,true,  false,true, false, true, false,true ],
-  6: [true, false,true,  true, false,true,  true, false,true ],
+  0: [false, false, false, false, false, false, false, false, false],
+  1: [false, false, false, false, true, false, false, false, false],
+  2: [false, false, true, false, false, false, true, false, false],
+  3: [false, false, true, false, true, false, true, false, false],
+  4: [true, false, true, false, false, false, true, false, true],
+  5: [true, false, true, false, true, false, true, false, true],
+  6: [true, false, true, true, false, true, true, false, true],
 };
 
 // ─── Small components ─────────────────────────────────────────────────────────
@@ -183,8 +183,8 @@ function DiceFace({ value, rolling }: { value: number; rolling?: boolean }) {
 
 function StatBar({ value, color }: { value: number; color: string }) {
   const gradientMap: Record<string, string> = {
-    "bg-blue-500":   "linear-gradient(90deg, #1565C0, #42A5F5)",
-    "bg-red-500":    "linear-gradient(90deg, #B71C1C, #EF5350)",
+    "bg-blue-500": "linear-gradient(90deg, #1565C0, #42A5F5)",
+    "bg-red-500": "linear-gradient(90deg, #B71C1C, #EF5350)",
     "bg-purple-500": "linear-gradient(90deg, #7B1FA2, #CE93D8)",
   };
   const gradient = gradientMap[color] ?? "linear-gradient(90deg, #555, #888)";
@@ -229,7 +229,7 @@ function PlayerPanel({
         >
           {player.role === "vietnam" ? <VietnamFlagIcon size={17} />
             : player.role === "financial_capital" ? "💰"
-            : "🌏"}
+              : "🌏"}
         </div>
 
         {/* Name + role */}
@@ -449,7 +449,7 @@ function BoardCell({
     <>
       {playersHere.map(p => {
         const isPending = p.id === pendingPlayerId;
-        const colorIdx  = TOKEN_COLOR_TO_INDEX[tokenColors[p.id]] ?? 0;
+        const colorIdx = TOKEN_COLOR_TO_INDEX[tokenColors[p.id]] ?? 0;
         const glowClass = isPending
           ? `token-glow-pending-${colorIdx}`
           : `token-glow-${colorIdx}`;
@@ -569,10 +569,10 @@ function CellLandingModal({ cell, ownerName, isMine, onClose }: {
     free:              { bg: "rgba(90,100,116,0.28)", text: "#dbe2ec" },
   };
 
-  const bg   = typeGradient[cell.type]   ?? typeGradient.free;
-  const bdr  = typeBorderColor[cell.type] ?? "#555";
-  const bdg  = badgeColor[cell.type]     ?? badgeColor.free;
-  const fx   = cell.effect;
+  const bg = typeGradient[cell.type] ?? typeGradient.free;
+  const bdr = typeBorderColor[cell.type] ?? "#555";
+  const bdg = badgeColor[cell.type] ?? badgeColor.free;
+  const fx = cell.effect;
 
   return (
     <div
@@ -657,7 +657,7 @@ function CellLandingModal({ cell, ownerName, isMine, onClose }: {
                   className="text-sm font-bold px-3 py-0.5 rounded-full"
                   style={{
                     background: fx.money >= 0 ? "rgba(0,230,118,0.15)" : "rgba(255,23,68,0.15)",
-                    color:      fx.money >= 0 ? "#00E676"               : "#FF4466",
+                    color: fx.money >= 0 ? "#00E676" : "#FF4466",
                     fontFamily: "var(--font-code)",
                   }}
                 >
@@ -672,7 +672,7 @@ function CellLandingModal({ cell, ownerName, isMine, onClose }: {
                   className="text-sm font-bold px-3 py-0.5 rounded-full"
                   style={{
                     background: fx.autonomy >= 0 ? "rgba(30,144,255,0.15)" : "rgba(255,100,0,0.15)",
-                    color:      fx.autonomy >= 0 ? "#40C4FF"               : "#FFAB40",
+                    color: fx.autonomy >= 0 ? "#40C4FF" : "#FFAB40",
                     fontFamily: "var(--font-code)",
                   }}
                 >
@@ -687,7 +687,7 @@ function CellLandingModal({ cell, ownerName, isMine, onClose }: {
                   className="text-sm font-bold px-3 py-0.5 rounded-full"
                   style={{
                     background: fx.softPower >= 0 ? "rgba(180,79,255,0.15)" : "rgba(255,23,68,0.15)",
-                    color:      fx.softPower >= 0 ? "#CE93D8"               : "#FF6B8A",
+                    color: fx.softPower >= 0 ? "#CE93D8" : "#FF6B8A",
                     fontFamily: "var(--font-code)",
                   }}
                 >
@@ -763,22 +763,22 @@ function CellLandingModal({ cell, ownerName, isMine, onClose }: {
 function CardModal({ card, onClose }: { card: EventCard; onClose: () => void }) {
   const styles: Record<string, { bg: string; border: string; badge: { bg: string; text: string }; label: string }> = {
     state_policy: {
-      bg:     "linear-gradient(160deg, #00280A 0%, #001205 100%)",
+      bg: "linear-gradient(160deg, #00280A 0%, #001205 100%)",
       border: "#00C853",
-      badge:  { bg: "rgba(0,200,83,0.22)", text: "#40E090" },
-      label:  "🏛️ Chính sách Nhà nước",
+      badge: { bg: "rgba(0,200,83,0.22)", text: "#40E090" },
+      label: "🏛️ Chính sách Nhà nước",
     },
     financial_capital: {
-      bg:     "linear-gradient(160deg, #3D0000 0%, #1A0000 100%)",
+      bg: "linear-gradient(160deg, #3D0000 0%, #1A0000 100%)",
       border: "#FF3B3B",
-      badge:  { bg: "rgba(255,59,59,0.22)", text: "#FF8080" },
-      label:  "💰 Tư bản Tài chính",
+      badge: { bg: "rgba(255,59,59,0.22)", text: "#FF8080" },
+      label: "💰 Tư bản Tài chính",
     },
     globalization: {
-      bg:     "linear-gradient(160deg, #00204A 0%, #000F28 100%)",
+      bg: "linear-gradient(160deg, #00204A 0%, #000F28 100%)",
       border: "#1E90FF",
-      badge:  { bg: "rgba(30,144,255,0.22)", text: "#70B8FF" },
-      label:  "🌐 Toàn cầu hóa",
+      badge: { bg: "rgba(30,144,255,0.22)", text: "#70B8FF" },
+      label: "🌐 Toàn cầu hóa",
     },
   };
 
@@ -829,7 +829,7 @@ function CardModal({ card, onClose }: { card: EventCard; onClose: () => void }) 
                 className="text-sm font-bold px-3 py-0.5 rounded-full"
                 style={{
                   background: card.effect.money >= 0 ? "rgba(0,230,118,0.15)" : "rgba(255,23,68,0.15)",
-                  color:      card.effect.money >= 0 ? "#00E676"               : "#FF4466",
+                  color: card.effect.money >= 0 ? "#00E676" : "#FF4466",
                   fontFamily: "var(--font-code)",
                 }}
               >
@@ -844,7 +844,7 @@ function CardModal({ card, onClose }: { card: EventCard; onClose: () => void }) 
                 className="text-sm font-bold px-3 py-0.5 rounded-full"
                 style={{
                   background: card.effect.autonomy >= 0 ? "rgba(30,144,255,0.15)" : "rgba(255,100,0,0.15)",
-                  color:      card.effect.autonomy >= 0 ? "#40C4FF"               : "#FFAB40",
+                  color: card.effect.autonomy >= 0 ? "#40C4FF" : "#FFAB40",
                   fontFamily: "var(--font-code)",
                 }}
               >
@@ -859,7 +859,7 @@ function CardModal({ card, onClose }: { card: EventCard; onClose: () => void }) 
                 className="text-sm font-bold px-3 py-0.5 rounded-full"
                 style={{
                   background: card.effect.softPower >= 0 ? "rgba(180,79,255,0.15)" : "rgba(255,23,68,0.15)",
-                  color:      card.effect.softPower >= 0 ? "#CE93D8"               : "#FF6B8A",
+                  color: card.effect.softPower >= 0 ? "#CE93D8" : "#FF6B8A",
                   fontFamily: "var(--font-code)",
                 }}
               >
@@ -903,7 +903,7 @@ function EffectBadges({ effect }: { effect: { money?: number; autonomy?: number;
           className="text-[11px] px-2 py-0.5 rounded-full font-bold"
           style={{
             background: effect.money >= 0 ? "rgba(0,230,118,0.15)" : "rgba(255,23,68,0.15)",
-            color:      effect.money >= 0 ? "#00E676"               : "#FF4466",
+            color: effect.money >= 0 ? "#00E676" : "#FF4466",
             fontFamily: "var(--font-code)",
           }}
         >
@@ -915,7 +915,7 @@ function EffectBadges({ effect }: { effect: { money?: number; autonomy?: number;
           className="text-[11px] px-2 py-0.5 rounded-full font-bold"
           style={{
             background: effect.autonomy >= 0 ? "rgba(30,144,255,0.15)" : "rgba(255,100,0,0.15)",
-            color:      effect.autonomy >= 0 ? "#40C4FF"               : "#FFAB40",
+            color: effect.autonomy >= 0 ? "#40C4FF" : "#FFAB40",
             fontFamily: "var(--font-code)",
           }}
         >
@@ -927,7 +927,7 @@ function EffectBadges({ effect }: { effect: { money?: number; autonomy?: number;
           className="text-[11px] px-2 py-0.5 rounded-full font-bold"
           style={{
             background: effect.softPower >= 0 ? "rgba(180,79,255,0.15)" : "rgba(255,23,68,0.15)",
-            color:      effect.softPower >= 0 ? "#CE93D8"               : "#FF6B8A",
+            color: effect.softPower >= 0 ? "#CE93D8" : "#FF6B8A",
             fontFamily: "var(--font-code)",
           }}
         >
@@ -993,10 +993,10 @@ function VoteModal({ vote, onVote, totalPlayers }: {
         {/* Options */}
         <div className="px-6 pb-4 space-y-2.5">
           {vote.options.map((opt, i) => {
-            const isAccept    = i === 0;
+            const isAccept = i === 0;
             const colorActive = isAccept ? "#00C853" : "#FF3B3B";
-            const isChosen    = selected === i;
-            const isDisabled  = selected !== null && !isChosen;
+            const isChosen = selected === i;
+            const isDisabled = selected !== null && !isChosen;
             return (
               <button
                 key={i}
@@ -1207,9 +1207,9 @@ function QuizResultModal({ result, onClose }: { result: QuizResult; onClose: () 
           <p className="text-sm leading-relaxed" style={{ color: "rgba(200,216,240,0.85)" }}>
             {good
               ? (result.purchased
-                  ? `Đã mua thành công [${result.cellName}]. Từ giờ người khác dẫm vào sẽ phải trả phí thuê cho bạn.`
-                  : `Bạn hiểu đúng kiến thức nhưng chưa đủ vốn để mua [${result.cellName}] (+5 Tự chủ).`)
-              : `Đáp án đúng là phương án ${["A","B","C","D"][result.correctIndex]}. Mất $30 chi phí cơ hội và -10 Tự chủ.`}
+                ? `Đã mua thành công [${result.cellName}]. Từ giờ người khác dẫm vào sẽ phải trả phí thuê cho bạn.`
+                : `Bạn hiểu đúng kiến thức nhưng chưa đủ vốn để mua [${result.cellName}] (+5 Tự chủ).`)
+              : `Đáp án đúng là phương án ${["A", "B", "C", "D"][result.correctIndex]}. Mất $30 chi phí cơ hội và -10 Tự chủ.`}
           </p>
         </div>
         <button
@@ -1231,6 +1231,7 @@ function QuizResultModal({ result, onClose }: { result: QuizResult; onClose: () 
 // RulesModal is now shared with the home page (players can read the rules
 // before creating/joining a room, not just once already inside a match) —
 // see src/components/GameRulesModal.tsx.
+// (Duplicate local RulesModal removed — see GameRulesModal.tsx for the real one)
 
 // ─── Game Over Modal ─────────────────────────────────────────────────────────
 
@@ -1309,10 +1310,9 @@ function GameOverModal({
                   background: i === 0
                     ? "rgba(232,185,35,0.08)"
                     : "rgba(255,255,255,0.03)",
-                  border: `1px solid ${
-                    i === 0 ? "rgba(232,185,35,0.25)"
+                  border: `1px solid ${i === 0 ? "rgba(232,185,35,0.25)"
                     : "rgba(255,255,255,0.06)"
-                  }`,
+                    }`,
                   borderLeft: `3px solid ${medalColors[i] ?? "rgba(255,255,255,0.1)"}`,
                 }}
               >
@@ -1399,8 +1399,8 @@ function GameOverModal({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function RoomPage() {
-  const params   = useParams();
-  const router   = useRouter();
+  const params = useParams();
+  const router = useRouter();
   const roomCode = (params.id as string)?.toUpperCase();
   const {
     socket, room, lastCard, voteSession, quizSession, lastQuizResult, diceAnimation, isRolling,
@@ -1417,20 +1417,20 @@ export default function RoomPage() {
   const [viewCell, setViewCell]               = useState<BoardCellFull | null>(null);
   const visualPosRef                           = useRef<Record<string, number>>({});
   const [visualPositions, setVisualPositions] = useState<Record<string, number>>({});
-  const [pendingMove, setPendingMove]         = useState<{ pid: string; to: number; isMe: boolean } | null>(null);
-  const walkIntervalRef                        = useRef<ReturnType<typeof setInterval> | null>(null);
-  const prevHasRolled                          = useRef(false);
+  const [pendingMove, setPendingMove] = useState<{ pid: string; to: number; isMe: boolean } | null>(null);
+  const walkIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const prevHasRolled = useRef(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
-  const [showRules, setShowRules]               = useState(false);
-  const [rollingFace, setRollingFace]         = useState(1);
-  const [showGameOver, setShowGameOver]       = useState(false);
+  const [showRules, setShowRules] = useState(false);
+  const [rollingFace, setRollingFace] = useState(1);
+  const [showGameOver, setShowGameOver] = useState(false);
   // Guards card modal from flashing before token animation starts.
   // true only after pendingMove has been set+cleared (full animation cycle done).
   const [turnHasAnimated, setTurnHasAnimated] = useState(false);
-  const hadPendingMoveRef                      = useRef(false);
+  const hadPendingMoveRef = useRef(false);
   // Local capture of the drawn card — independent of useGameSocket's 8s auto-clear.
   // Stays until the player explicitly dismisses, regardless of how long movement takes.
-  const [capturedCard, setCapturedCard]       = useState<EventCard | null>(null);
+  const [capturedCard, setCapturedCard] = useState<EventCard | null>(null);
 
   useEffect(() => {
     if (!isRolling) return;
@@ -1499,7 +1499,7 @@ export default function RoomPage() {
       setVisualPositions({ ...next });
       preRollPlayersRef.current = [...room.players];
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [room?.players.length]);
 
   useEffect(() => {
@@ -1524,7 +1524,7 @@ export default function RoomPage() {
     if (!cp) return;
 
     const from = visualPosRef.current[cp.id] ?? cp.position;
-    const to   = cp.position;
+    const to = cp.position;
     const isMe = cp.socketId === socket?.id;
 
     visualPosRef.current = { ...visualPosRef.current, [cp.id]: from };
@@ -1610,9 +1610,9 @@ export default function RoomPage() {
   room.players.forEach((p, i) => { tokenColors[p.id] = TOKEN_COLORS[i % TOKEN_COLORS.length]; });
 
   const currentPlayer = room.players[room.currentTurnIndex];
-  const isMyTurn      = currentPlayer?.socketId === socket?.id;
-  const myPlayer      = room.players.find(p => p.socketId === socket?.id);
-  const myVisualPos   = myPlayer ? (visualPositions[myPlayer.id] ?? myPlayer.position) : -1;
+  const isMyTurn = currentPlayer?.socketId === socket?.id;
+  const myPlayer = room.players.find(p => p.socketId === socket?.id);
+  const myVisualPos = myPlayer ? (visualPositions[myPlayer.id] ?? myPlayer.position) : -1;
 
   const sortedScores = [...room.players]
     .map(p => ({ ...p, score: computeScore(p) }))

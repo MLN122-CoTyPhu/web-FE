@@ -61,7 +61,7 @@ export interface QuizSession {
   question: string;
   options: string[];
   price: number;
-  expiresAt: number;  // epoch ms — hết giờ trả lời (15s)
+  expiresAt: number;  // epoch ms — hết giờ trả lời (30s)
 }
 
 export interface QuizResult {
