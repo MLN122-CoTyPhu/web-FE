@@ -55,7 +55,7 @@ function PowerIcon({ size = 11 }: { size?: number }) {
 export function RulesModal({ onClose }: { onClose: () => void }) {
   return (
     <div
-      className="fixed inset-0 flex items-center justify-center z-[60] p-4"
+      className="fixed inset-0 flex items-center justify-center z-[250] p-4"
       style={{ background: "rgba(0,0,0,0.82)", backdropFilter: "blur(10px)" }}
       onClick={onClose}
     >
@@ -96,12 +96,15 @@ export function RulesModal({ onClose }: { onClose: () => void }) {
             <h3 className="font-bold mb-2 text-base" style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>
               🏆 Điểm Số
             </h3>
-            <div className="rounded-xl px-4 py-3" style={{ background: "rgba(232,185,35,0.07)", border: "1px solid rgba(232,185,35,0.2)" }}>
-              <p className="font-bold text-center text-base" style={{ color: "var(--gold-400)", fontFamily: "var(--font-code)" }}>
+            <div className="rounded-xl px-4 py-3 text-center" style={{ background: "rgba(232,185,35,0.07)", border: "1px solid rgba(232,185,35,0.2)" }}>
+              <p className="font-bold text-base" style={{ color: "var(--gold-400)", fontFamily: "var(--font-code)" }}>
                 Điểm = Tiền + Giá trị tài sản đã thâu tóm + Tự chủ×10 + Quyền lực mềm×5
               </p>
-              <p className="text-center text-xs mt-1.5" style={{ color: "rgba(232,185,35,0.6)" }}>
+              <p className="text-xs mt-1.5" style={{ color: "rgba(232,185,35,0.6)" }}>
                 Tự chủ = 0 → thua ngay lập tức, dù nhiều tiền/tài sản nhất
+              </p>
+              <p className="text-[11px] mt-1.5 border-t border-dashed border-[rgba(255,23,68,0.3)] pt-1.5" style={{ color: "#FF6B7A" }}>
+                ⚠️ <strong>Thâm hụt tài chính &amp; Vỡ nợ</strong>: Khi bị trừ tiền mặt vượt quá số dư hiện có (trả phí thuê, phạt quiz, thẻ sự kiện...), phần thâm hụt sẽ tự động quy đổi thành giảm Tự chủ kinh tế với tỷ lệ <strong>$10 thâm hụt = -1 Tự chủ</strong>.
               </p>
             </div>
           </section>

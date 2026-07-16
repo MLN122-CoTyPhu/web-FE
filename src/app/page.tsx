@@ -118,7 +118,7 @@ export default function Home() {
       <SiteNav />
       {showRules && <RulesModal onClose={() => setShowRules(false)} />}
       <div
-      className="min-h-screen flex items-center justify-center p-4 pt-24 relative overflow-hidden"
+      className={`min-h-screen flex items-center justify-center p-4 ${mode === "menu" ? "pt-24" : "pt-16 md:pt-20"} relative overflow-hidden`}
       style={{ background: "radial-gradient(ellipse at 50% 40%, #2a1710 0%, #17100e 70%)" }}
     >
       {/* Floating decoration elements */}
@@ -131,27 +131,35 @@ export default function Home() {
 
       <div className="w-full max-w-md relative z-10">
         {/* Header */}
-        <div className="text-center mb-8">
+        <div className={`text-center ${mode === "menu" ? "mb-8" : "mb-3"}`}>
           <h1
-            className="text-gold-gradient mb-2 tracking-wide"
-            style={{ fontFamily: "var(--font-display)", fontSize: "clamp(36px, 8vw, 52px)" }}
+            className={`text-gold-gradient tracking-wide ${mode === "menu" ? "mb-2" : "mb-1"}`}
+            style={{ fontFamily: "var(--font-display)", fontSize: mode === "menu" ? "clamp(36px, 8vw, 52px)" : "clamp(28px, 6vw, 38px)" }}
           >
             ♔ Cờ Tỷ Phú
           </h1>
-          <p style={{ fontFamily: "var(--font-ui)", color: "var(--text-secondary)" }}
-            className="font-semibold text-sm tracking-widest uppercase">
-            Toàn Cầu Hóa &amp; Tư Bản Tài Chính
-          </p>
-          <p className="text-xs mt-1" style={{ color: "rgba(139,163,204,0.5)" }}>
-            Chương 4 — Mác-Lênin
-          </p>
+          {mode === "menu" ? (
+            <>
+              <p style={{ fontFamily: "var(--font-ui)", color: "var(--text-secondary)" }}
+                className="font-semibold text-sm tracking-widest uppercase">
+                Toàn Cầu Hóa &amp; Tư Bản Tài Chính
+              </p>
+              <p className="text-xs mt-1" style={{ color: "rgba(139,163,204,0.5)" }}>
+                Chương 4 — Mác-Lênin
+              </p>
+            </>
+          ) : (
+            <p className="text-xs font-semibold" style={{ color: "var(--text-secondary)", fontFamily: "var(--font-ui)" }}>
+              Toàn Cầu Hóa &amp; Tư Bản Tài Chính
+            </p>
+          )}
 
           {/* Connection indicator */}
-          <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
+          <div className={`${mode === "menu" ? "mt-4" : "mt-2"} inline-flex items-center gap-2 px-3 py-1 rounded-full`}
             style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
             <div className={`w-2 h-2 rounded-full ${isConnected ? "bg-green-400 animate-pulse" : "bg-red-400"}`} />
             <span className="text-xs" style={{ color: "var(--text-secondary)" }}>
-              {isConnected ? "Đã kết nối server" : "Đang kết nối..."}
+              {isConnected ? "Đã kết nối" : "Đang kết nối..."}
             </span>
           </div>
         </div>
@@ -293,44 +301,36 @@ export default function Home() {
                   style={{ color: "var(--text-secondary)", fontFamily: "var(--font-ui)" }}>
                   Chọn vai của bạn
                 </p>
-                <div className="space-y-2">
+                <div className="grid grid-cols-3 gap-2">
                   {ROLE_OPTIONS.map(opt => {
                     const isSelected = role === opt.value;
+                    const borderCol = opt.border;
                     return (
                       <button
                         key={opt.value}
                         onClick={() => setRole(opt.value)}
-                        className="w-full text-left px-4 py-3 rounded-xl transition-all flex items-center gap-3"
+                        className="flex flex-col items-center justify-center p-2.5 rounded-xl transition-all border text-center cursor-pointer"
                         style={{
-                          background: isSelected ? opt.accent : "rgba(255,255,255,0.03)",
-                          border: `1.5px solid ${isSelected ? opt.border : "rgba(255,255,255,0.08)"}`,
-                          transform: isSelected ? "scale(1.01)" : "scale(1)",
-                          boxShadow: isSelected ? `0 0 14px ${opt.border}28` : "none",
+                          background: isSelected ? opt.accent : "rgba(255,255,255,0.02)",
+                          borderColor: isSelected ? borderCol : "rgba(255,255,255,0.08)",
+                          boxShadow: isSelected ? `0 0 10px ${borderCol}20` : "none",
                         }}
                       >
-                        <span className="text-2xl flex-shrink-0">{opt.icon}</span>
-                        <div className="min-w-0">
-                          <div className="font-bold text-sm" style={{
-                            color: isSelected ? "var(--text-primary)" : "var(--text-secondary)",
-                            fontFamily: "var(--font-ui)",
-                          }}>
-                            {opt.label}
-                          </div>
-                          <div className="text-xs mt-0.5" style={{ color: "rgba(139,163,204,0.7)" }}>
-                            {opt.desc}
-                          </div>
-                        </div>
-                        {isSelected && (
-                          <div className="ml-auto flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
-                            style={{ background: opt.border }}>
-                            <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                              <path d="M1 4l3 3 5-6" stroke="#000" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                          </div>
-                        )}
+                        <span className="text-xl mb-1">{opt.icon}</span>
+                        <span className="font-bold text-[10.5px] whitespace-nowrap" style={{
+                          color: isSelected ? "var(--text-primary)" : "var(--text-secondary)",
+                          fontFamily: "var(--font-ui)",
+                          lineHeight: "1.2"
+                        }}>
+                          {opt.value === "developing_country" ? "Đang P.Triển" : opt.value === "financial_capital" ? "TB Tài Chính" : "Việt Nam"}
+                        </span>
                       </button>
                     );
                   })}
+                </div>
+                {/* Single line description below to save vertical height */}
+                <div className="mt-2 p-2.5 rounded-lg text-center text-xs" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}>
+                  💡 <span className="font-semibold" style={{ color: "var(--gold-400)" }}>{ROLE_OPTIONS.find(o => o.value === role)?.label}</span>: {ROLE_OPTIONS.find(o => o.value === role)?.desc}
                 </div>
               </div>
 
