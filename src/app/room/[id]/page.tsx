@@ -1840,8 +1840,7 @@ export default function RoomPage() {
                 // row/column taller than the rest. Capping the min at 0 forces every
                 // track to the same size; overflow-hidden + line-clamp handles overflow.
                 gridTemplateColumns: "repeat(11, minmax(0, 1fr))",
-                gridTemplateColumns: "repeat(11, minmax(0, 1fr))",
-gridTemplateRows: "repeat(11, minmax(0, 1fr))",
+                gridTemplateRows: "repeat(11, minmax(0, 1fr))",
 aspectRatio: "1.08 / 1",
 width: "min(100%, calc(100vh - 40px), 1900px)",
 height: "auto",
@@ -2081,12 +2080,9 @@ maxWidth: "1900px",
                       <>
                         <button
                           onClick={endTurn}
-                          disabled={room.phase === "voting" || room.phase === "quiz"}
                           className="btn-green w-full py-2.5 text-sm"
                         >
-                          {room.phase === "voting" ? "⏳ Chờ kết quả biểu quyết..."
-                            : room.phase === "quiz" ? "⏳ Chờ trả lời quiz..."
-                            : "✓ Kết Thúc Lượt"}
+                          ✓ Kết Thúc Lượt
                         </button>
                         <p className="text-center text-[10px] mt-1.5" style={{ color: "rgba(139,163,204,0.5)" }}>
                           Đã đến ô — nhấn kết thúc để chuyển lượt
