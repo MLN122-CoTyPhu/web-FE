@@ -408,6 +408,7 @@ function ScoreRow({
 function BoardCell({
   cell, index, players, tokenColors, isMyPosition,
   visualPositions, pendingPlayerId, onTokenClick, cellOwners, onCellInfo,
+  clickable,
 }: {
   cell: typeof BOARD_CELLS[0];
   index: number;
@@ -422,6 +423,7 @@ function BoardCell({
   // its "Kiến thức Chương 4" explanation on demand, independent of the real
   // game-flow landing modal / quiz (which still only fires on an actual roll).
   onCellInfo: (cell: typeof BOARD_CELLS[0]) => void;
+  clickable: boolean;
 }) {
   const ownerId = cell.ownable ? cellOwners[cell.id] : undefined;
   const ownerColor = ownerId ? (tokenColors[ownerId] ?? "bg-white") : undefined;
@@ -477,11 +479,12 @@ function BoardCell({
 
   return (
     <div
-      className={`border rounded-[5px] ${colors} relative select-none group cursor-pointer overflow-visible
+      className={`border rounded-[5px] ${colors} relative select-none group overflow-visible transition-all
+        ${clickable ? "cursor-pointer hover:brightness-110" : "cursor-default"}
         ${isMyPosition ? "ring-2 ring-white/70 ring-offset-1 ring-offset-[#17100e] z-10 shadow-[0_0_14px_rgba(255,255,255,0.4)]" : ""}
       `}
       style={{ gridRow: pos.row, gridColumn: pos.col }}
-      onClick={handleCellClick}
+      onClick={clickable ? handleCellClick : undefined}
     >
       <Tooltip />
 
@@ -1489,6 +1492,15 @@ export default function RoomPage() {
     }
   }, [lastCard]);
 
+  const isBusy = !!pendingMove || !!landingCell || !!quizSession || !!voteSession || !!lastCard || isRolling || !!lastQuizResult;
+
+  // Auto-close info reference modal when the game state is busy (movement, turns, modals)
+  useEffect(() => {
+    if (isBusy && viewCell) {
+      setViewCell(null);
+    }
+  }, [isBusy, viewCell]);
+
   useEffect(() => {
     if (!roomCode) return;
     const savedRoom = localStorage.getItem("co_ty_phu_room");
@@ -1882,6 +1894,7 @@ maxWidth: "1900px",
                   onTokenClick={walkToken}
                   cellOwners={room.cellOwners}
                   onCellInfo={setViewCell}
+                  clickable={!isBusy}
                 />
               ))}
 
