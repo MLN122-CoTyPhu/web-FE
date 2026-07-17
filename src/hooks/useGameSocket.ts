@@ -69,7 +69,7 @@ export function useGameSocket(): UseGameSocketReturn {
     });
 
     socket.on("connect_error", (err) => {
-      console.error("Socket connect error:", err.message);
+      console.warn("Socket connect error:", err.message);
     });
 
     socket.io.on("reconnect_attempt", (attempt: number) => {
@@ -89,10 +89,14 @@ export function useGameSocket(): UseGameSocketReturn {
       // Save roomCode so reconnect works after page navigation/refresh
       localStorage.setItem("co_ty_phu_room", newRoom.roomCode);
       setRoom(newRoom);
+      setVoteSession(newRoom.voteSession || null);
+      setQuizSession(newRoom.quizSession || null);
     });
 
     socket.on("game_update", (newRoom) => {
       setRoom({ ...newRoom }); // spread để trigger re-render
+      setVoteSession(newRoom.voteSession || null);
+      setQuizSession(newRoom.quizSession || null);
     });
 
     socket.on("card_drawn", (card) => {

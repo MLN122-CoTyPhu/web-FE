@@ -526,12 +526,20 @@ function BoardCell({
 
 // ─── Cell Landing Modal ───────────────────────────────────────────────────────
 
-function CellLandingModal({ cell, ownerName, isMine, onClose }: {
+function CellLandingModal({ cell, ownerName, isMine, myRole, onClose }: {
   cell: BoardCellFull;
   ownerName?: string;
   isMine?: boolean;
+  myRole?: PlayerRole;
   onClose: () => void;
 }) {
+  const actualRent = myRole && ownerName && !isMine
+    ? Math.round((cell.rent ?? 0) * (myRole === "vietnam" ? 0.6 : myRole === "financial_capital" ? 0.5 : 1.0))
+    : (cell.rent ?? 0);
+
+  const rentLabel = myRole && ownerName && !isMine && actualRent !== cell.rent
+    ? (myRole === "vietnam" ? "(Giảm 40% - Vai Việt Nam)" : "(Giảm 50% - Vai Tư bản TC)")
+    : "";
   const typeLabel = CELL_TYPE_LABELS[cell.type] ?? cell.type;
 
   // Bộ màu trầm, tông đỏ cờ + vàng học thuật — đồng bộ với CELL_COLORS
@@ -624,9 +632,16 @@ function CellLandingModal({ cell, ownerName, isMine, onClose }: {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm" style={{ color: "rgba(200,216,240,0.9)" }}>💸 Phí thuê</span>
-              <span className="text-sm font-bold" style={{ color: "#FF8080", fontFamily: "var(--font-code)" }}>
-                ${cell.rent}
-              </span>
+              <div className="text-right">
+                <span className="text-sm font-bold" style={{ color: "#FF8080", fontFamily: "var(--font-code)" }}>
+                  ${actualRent}
+                </span>
+                {rentLabel && (
+                  <span className="text-[10px] block" style={{ color: "rgba(0, 230, 118, 0.8)", marginTop: "2px" }}>
+                    {rentLabel}
+                  </span>
+                )}
+              </div>
             </div>
             {ownerName ? (
               <div className="text-xs pt-1.5" style={{ color: isMine ? "#40E090" : "#FF6B7A" }}>
@@ -1640,6 +1655,7 @@ export default function RoomPage() {
           cell={landingCell}
           ownerName={room.cellOwners[landingCell.id] ? room.players.find(p => p.id === room.cellOwners[landingCell.id])?.name : undefined}
           isMine={!!myPlayer && room.cellOwners[landingCell.id] === myPlayer.id}
+          myRole={myPlayer?.role}
           onClose={() => setLandingCell(null)}
         />
       )}
@@ -1665,6 +1681,7 @@ export default function RoomPage() {
           cell={viewCell}
           ownerName={room.cellOwners[viewCell.id] ? room.players.find(p => p.id === room.cellOwners[viewCell.id])?.name : undefined}
           isMine={!!myPlayer && room.cellOwners[viewCell.id] === myPlayer.id}
+          myRole={myPlayer?.role}
           onClose={() => setViewCell(null)}
         />
       )}
@@ -1799,7 +1816,7 @@ export default function RoomPage() {
             </span>
           </span>
           <span className="hidden sm:inline" style={{ color: "var(--text-secondary)" }}>
-            Lượt: <span className="text-white">{room.turnNumber}</span>
+            Lượt: <span className="text-white">{room.turnNumber}/50</span>
           </span>
           <div className={`flex items-center gap-1.5 ${isConnected ? "text-green-400" : "text-red-400"}`}>
             <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? "bg-green-400 animate-pulse" : "bg-red-400"}`} />
@@ -1883,8 +1900,8 @@ maxWidth: "1900px",
                 {/* Title */}
                 <div className="text-center mb-4 px-2">
                   <div
-                    className="text-gold-gradient font-bold text-2xl sm:text-3xl"
-                    style={{ fontFamily: "var(--font-display)" }}
+                    className="text-gold-gradient font-bold text-2xl sm:text-3xl py-1.5"
+                    style={{ fontFamily: "var(--font-display)", lineHeight: 1.3 }}
                   >
                     ♔ CỜ TỶ PHÚ TOÀN CẦU
                   </div>

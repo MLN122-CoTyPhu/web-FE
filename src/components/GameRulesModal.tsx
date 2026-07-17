@@ -116,12 +116,12 @@ export function RulesModal({ onClose }: { onClose: () => void }) {
             </h3>
             <div className="space-y-2">
               {[
-                { icon: "💰", name: "Tư bản tài chính", money: "$3.400", auto: "45", sp: "60",
-                  note: "Trả phí thuê chỉ 50% khi dẫm ô người khác (có kênh vốn thay thế). Chịu khủng hoảng 30%." },
-                { icon: <VietnamFlagIcon size={18} />, name: "Việt Nam", money: "$2.400", auto: "80", sp: "65",
-                  note: "Trả phí thuê 60% (nhà nước điều tiết). Rút thẻ Chính sách (toàn tốt) tại ô Việt Nam." },
-                { icon: "🌏", name: "Nước đang phát triển", money: "$2.000", auto: "85", sp: "45",
-                  note: "Tự chủ cao nhất nhưng trả phí thuê 100% (đầy đủ) và 120% khi khủng hoảng." },
+                { icon: "💰", name: "Tư bản tài chính", money: "$2.700", auto: "45", sp: "60",
+                  note: "Phí thuê 50%. Trên ô Đỏ/Cam: nhận lợi thay vì mất. Trên ô TNC: nhận 50% giá trị. Là chủ nợ Consortium → nhận cổ tức." },
+                { icon: <VietnamFlagIcon size={18} />, name: "Việt Nam", money: "$1.900", auto: "80", sp: "65",
+                  note: "Phí thuê 60%. Trên ô Đỏ: giảm 50% tác động xấu. Trên ô TNC: giảm 30%. Rút thẻ Chính sách (toàn tốt) tại ô Việt Nam." },
+                { icon: "🌏", name: "Nước đang phát triển", money: "$1.600", auto: "85", sp: "45",
+                  note: "Tự chủ cao nhất nhưng phí thuê 100%. Chịu đầy đủ tác động tiêu cực từ ô Đỏ/TNC. Khủng hoảng: thêm −5 Tự chủ." },
               ].map(r => (
                 <div key={r.name} className="rounded-xl px-3 py-2.5 flex gap-3 items-start"
                   style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
@@ -180,8 +180,8 @@ export function RulesModal({ onClose }: { onClose: () => void }) {
                 ["#b0621a", "🟠 Tập đoàn (×4, sở hữu được)", "Chưa chủ: quiz để mua. Có chủ: trả phí thuê."],
                 ["#7a3d94", "🟣 Consortium (×5)", "Vote tập thể. Tư bản TC nhận cổ tức."],
                 ["#2f5f95", "🔵 TNC — Công ty xuyên QG (×8, sở hữu được)", "Chưa chủ: quiz để mua. Có chủ: trả phí thuê."],
-                ["#1f7a45", "🟢 Việt Nam (×8)", "Việt Nam rút thẻ tốt. Khác: hiệu ứng thường."],
-                ["#8a1a12", "⚫ Khủng hoảng (×3)", "Tất cả mất tiền. Nước ĐPT mất 120%."],
+                ["#1f7a45", "🟢 Việt Nam (×8)", "Vai Việt Nam: rút thẻ tốt. Vai khác: không có hiệu ứng."],
+                ["#8a1a12", "⚫ Khủng hoảng (×3)", "Tất cả mất 10% tiền hiện có. ĐPT: thêm −5 Tự chủ."],
                 ["#d4af1f", "⭐ Xuất phát (ô 0)", "Đi qua → nhận +$200."],
                 ["#5a6474", "⬜ Tự do (ô 10) / Cơ hội (ô 39)", "Tự do: không có gì. Cơ hội: rút thẻ ngẫu nhiên."],
               ].map(([color, label, desc]) => (
@@ -202,10 +202,11 @@ export function RulesModal({ onClose }: { onClose: () => void }) {
             <div className="rounded-xl px-3 py-2.5 text-xs space-y-1.5"
               style={{ background: "rgba(232,185,35,0.06)", border: "1px solid rgba(232,185,35,0.2)" }}>
               <p style={{ color: "var(--text-primary)" }}>21 ô (Tư bản tài chính / Tập đoàn / TNC) có thể mua được:</p>
-              <p>• <strong style={{ color: "var(--gold-300)" }}>Chưa có chủ</strong> → hiện câu hỏi kiến thức Chương 4. Trả lời đúng + đủ tiền → <strong style={{ color: "#40E090" }}>thâu tóm</strong> ô đó (trở thành chủ).</p>
-              <p>• Trả lời <strong style={{ color: "#FF6B7A" }}>sai</strong> → mất $30 chi phí cơ hội và −10 Tự chủ.</p>
-              <p>• <strong style={{ color: "#FF6B7A" }}>Đã có chủ</strong> (người khác) → tự động trả <strong>phí thuê</strong> cho chủ sở hữu — mô phỏng việc chiếm đoạt giá trị thặng dư.</p>
-              <p>• Phí thuê thực trả tuỳ vai: <strong style={{ color: "#70B8FF" }}>Tư bản TC 50%</strong> · <strong style={{ color: "#40E090" }}>Việt Nam 60%</strong> · <strong style={{ color: "#FFAB40" }}>Nước ĐPT 100%</strong>.</p>
+              <p>• <strong style={{ color: "var(--gold-300)" }}>Chưa có chủ</strong> → hiện câu hỏi kiến thức Chương 4. Trả lời đúng + đủ tiền + Sức mạnh ≥ 50 → <strong style={{ color: "#40E090" }}>thâu tóm</strong> ô đó.</p>
+              <p>• Trả lời <strong style={{ color: "#40E090" }}>đúng nhưng thiếu điều kiện</strong> (không đủ tiền hoặc Sức mạnh &lt; 50) → vẫn ghi nhận hiểu biết: <strong style={{ color: "#42A5F5" }}>+5 Tự chủ</strong>.</p>
+              <p>• Trả lời <strong style={{ color: "#FF6B7A" }}>sai</strong> hoặc <strong style={{ color: "#FF6B7A" }}>hết giờ</strong> → mất $30 chi phí cơ hội và −10 Tự chủ.</p>
+              <p>• <strong style={{ color: "#FF6B7A" }}>Đã có chủ</strong> (người khác) → tự động trả <strong>phí thuê</strong> + <strong>−5 Tự chủ</strong> (lệ thuộc kinh tế).</p>
+              <p>• Phí thuê tuỳ vai: <strong style={{ color: "#70B8FF" }}>Tư bản TC 50%</strong> · <strong style={{ color: "#40E090" }}>Việt Nam 60%</strong> · <strong style={{ color: "#FFAB40" }}>Nước ĐPT 100%</strong>.</p>
               <p>• Dẫm vào ô của chính mình → miễn phí.</p>
               <p>• Giá trị các ô đã thâu tóm được cộng vào điểm cuối game.</p>
             </div>
@@ -221,15 +222,15 @@ export function RulesModal({ onClose }: { onClose: () => void }) {
                 style={{ background: "rgba(255,23,68,0.08)", border: "1px solid rgba(255,23,68,0.25)" }}>
                 <div className="font-bold text-xs" style={{ color: "#FF6B7A" }}>🚧 Ô 30 — Đình Trệ Sản Xuất</div>
                 <div className="text-xs mt-1" style={{ color: "rgba(255,107,122,0.8)" }}>
-                  −40 Tự chủ &nbsp;·&nbsp; −20 Sức mạnh &nbsp;·&nbsp; 2 lượt không thu phí thuê / không thâu tóm được ô mới (vẫn di chuyển và biểu quyết bình thường)
+                  −10% tiền mặt &nbsp;·&nbsp; −30 Tự chủ (ĐPT: −35) &nbsp;·&nbsp; −20 Sức mạnh &nbsp;·&nbsp; 2 lượt không thu phí thuê / không thâu tóm ô mới (vẫn di chuyển và biểu quyết)
                 </div>
               </div>
               <div className="rounded-xl px-3 py-2.5"
                 style={{ background: "rgba(255,23,68,0.06)", border: "1px solid rgba(255,23,68,0.2)" }}>
                 <div className="font-bold text-xs" style={{ color: "#FF6B7A" }}>💀 Kết thúc game</div>
                 <div className="text-xs mt-1" style={{ color: "rgba(139,163,204,0.75)" }}>
-                  Khi Tự chủ của bất kỳ ai về 0, game kết thúc ngay.
-                  Popup xếp hạng tự động hiện — người điểm cao nhất thắng.
+                  Trò chơi kết thúc ngay khi đạt tối đa <strong>50 lượt chơi</strong> hoặc khi Tự chủ của bất kỳ ai về 0.
+                  Bảng xếp hạng tự động hiện — người điểm cao nhất thắng.
                 </div>
               </div>
             </div>
@@ -249,11 +250,11 @@ export function RulesModal({ onClose }: { onClose: () => void }) {
               <div className="mt-2 pt-2" style={{ borderTop: "1px solid rgba(180,79,255,0.2)" }}>
                 <p className="font-semibold mb-1" style={{ color: "var(--text-primary)" }}>5 ô Consortium:</p>
                 {[
-                  ["5 — Oil Consortium", "Chấp nhận: +$150, −25 TC / Từ chối: +20 TC, +15 SP"],
-                  ["13 — Tech Alliance", "Chấp nhận: +$80, −20 TC, −10 SP / Từ chối: +25 TC, +10 SP"],
-                  ["17 — Banking Syndicate", "Chấp nhận: +$200, −35 TC / Từ chối: +30 TC, +10 SP"],
-                  ["20 — Hội đồng Tư vấn", "Chấp nhận: +$100, −30 TC, −15 SP / Từ chối: +25 TC, +20 SP"],
-                  ["26 — WTO", "Chấp nhận: +$150, −20 TC, +10 SP / Từ chối: +20 TC, −5 SP"],
+                  ["5 — Oil Consortium", "Chấp nhận: +$300, −15 TC / Từ chối: +10 TC, +10 SP"],
+                  ["13 — Tech Alliance", "Chấp nhận: +$160, −10 TC, −5 SP / Từ chối: +15 TC, +5 SP"],
+                  ["17 — Banking Syndicate", "Chấp nhận: +$400, −25 TC / Từ chối: +20 TC, +5 SP"],
+                  ["20 — Hội đồng Tư vấn", "Chấp nhận: +$200, −20 TC, −10 SP / Từ chối: +15 TC, +15 SP"],
+                  ["26 — WTO", "Chấp nhận: +$300, −10 TC, +5 SP / Từ chối: +10 TC"],
                 ].map(([o, e]) => (
                   <div key={o} className="flex gap-2 py-0.5">
                     <span className="flex-shrink-0 font-semibold" style={{ color: "#B44FFF", minWidth: 140 }}>{o}</span>
