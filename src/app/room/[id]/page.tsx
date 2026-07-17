@@ -1478,7 +1478,7 @@ export default function RoomPage() {
     if (!roomCode) return;
     const savedRoom = localStorage.getItem("co_ty_phu_room");
     const savedName = localStorage.getItem("co_ty_phu_name");
-    if (!savedRoom || !savedName) { router.replace("/"); }
+    if (!savedRoom || !savedName) { router.replace("/tro-choi"); }
   }, [roomCode, router]);
 
   useEffect(() => {
@@ -1622,7 +1622,7 @@ export default function RoomPage() {
     ? room.players.find(p => p.id === quizSession.playerId)?.name ?? "?"
     : "";
 
-  const handleLeave = () => { leaveRoom(); router.replace("/"); };
+  const handleLeave = () => { leaveRoom(); router.replace("/tro-choi"); };
 
   return (
     <div className="h-screen flex flex-col text-white overflow-hidden" style={{ background: "var(--bg-void)" }}>

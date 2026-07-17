@@ -46,7 +46,7 @@ function DocIcon() {
 
 export default function SiteNav() {
   const pathname = usePathname();
-  const isContent = pathname?.startsWith("/noi-dung");
+  const isContent = pathname === "/";
 
   // Thanh nav "fixed" đè lên chữ khi cuộn trang dài (Nội Dung) — tự ẩn khi
   // cuộn xuống, hiện lại ngay khi cuộn lên hoặc gần đầu trang, để nhường chỗ
@@ -131,10 +131,10 @@ export default function SiteNav() {
         </Link>
 
         <div className="flex items-center gap-2 flex-shrink-0">
-          <Link href="/noi-dung" className="flex items-center gap-1.5" style={pillStyle(!!isContent)}>
+          <Link href="/" className="flex items-center gap-1.5" style={pillStyle(!!isContent)}>
             <DocIcon /> Nội Dung
           </Link>
-          <Link href="/" className="flex items-center gap-1.5" style={pillStyle(!isContent)}>
+          <Link href="/tro-choi" className="flex items-center gap-1.5" style={pillStyle(!isContent)}>
             <PersonIcon /> Trò Chơi
           </Link>
         </div>

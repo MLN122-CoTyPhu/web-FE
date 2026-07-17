@@ -132,7 +132,7 @@ export function useGameSocket(): UseGameSocketReturn {
       localStorage.removeItem("co_ty_phu_room");
       localStorage.removeItem("co_ty_phu_name");
       localStorage.removeItem("co_ty_phu_role");
-      window.location.replace("/");
+      window.location.replace("/tro-choi");
     });
 
     socket.on("error", (msg) => {
