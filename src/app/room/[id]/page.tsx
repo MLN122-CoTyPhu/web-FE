@@ -1558,28 +1558,30 @@ export default function RoomPage() {
     const to = cp.position;
     const isMe = cp.socketId === socket?.id;
 
-    visualPosRef.current = { ...visualPosRef.current, [cp.id]: from };
-    setVisualPositions({ ...visualPosRef.current });
-    setPendingMove({ pid: cp.id, to, isMe });
+    setTimeout(() => {
+      visualPosRef.current = { ...visualPosRef.current, [cp.id]: from };
+      setVisualPositions({ ...visualPosRef.current });
+      setPendingMove({ pid: cp.id, to, isMe });
 
-    if (!isMe) {
-      const pid = cp.id;
-      let pos = from;
-      setTimeout(() => {
-        if (walkIntervalRef.current) clearInterval(walkIntervalRef.current);
-        const iv = setInterval(() => {
-          pos = (pos + 1) % 40;
-          visualPosRef.current = { ...visualPosRef.current, [pid]: pos };
-          setVisualPositions({ ...visualPosRef.current });
-          if (pos === to) {
-            clearInterval(iv);
-            walkIntervalRef.current = null;
-            setTimeout(() => setPendingMove(null), 800);
-          }
-        }, 400);
-        walkIntervalRef.current = iv;
-      }, 600);
-    }
+      if (!isMe) {
+        const pid = cp.id;
+        let pos = from;
+        setTimeout(() => {
+          if (walkIntervalRef.current) clearInterval(walkIntervalRef.current);
+          const iv = setInterval(() => {
+            pos = (pos + 1) % 40;
+            visualPosRef.current = { ...visualPosRef.current, [pid]: pos };
+            setVisualPositions({ ...visualPosRef.current });
+            if (pos === to) {
+              clearInterval(iv);
+              walkIntervalRef.current = null;
+              setTimeout(() => setPendingMove(null), 800);
+            }
+          }, 400);
+          walkIntervalRef.current = iv;
+        }, 600);
+      }
+    }, 1000);
   }, [room?.hasRolled, room?.currentTurnIndex, socket?.id]);
 
   const walkToken = useCallback(() => {

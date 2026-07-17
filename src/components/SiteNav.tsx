@@ -94,7 +94,7 @@ export default function SiteNav() {
       }}
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
-        <Link href="/noi-dung" className="flex items-center gap-3 min-w-0">
+        <Link href="/" className="flex items-center gap-3 min-w-0">
           <span
             className="flex-shrink-0 rounded-full flex items-center justify-center"
             style={{ width: "42px", height: "42px", background: "#e8b923" }}

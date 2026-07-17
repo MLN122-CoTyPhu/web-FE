@@ -126,9 +126,12 @@ export function useGameSocket(): UseGameSocketReturn {
     });
 
     socket.on("dice_rolled", (playerId, value) => {
-      setIsRolling(false);
-      setDiceAnimation({ playerId, value });
-      setTimeout(() => setDiceAnimation(null), 2000);
+      // Hold rolling state for at least 1s to let the animation show nicely
+      setTimeout(() => {
+        setIsRolling(false);
+        setDiceAnimation({ playerId, value });
+        setTimeout(() => setDiceAnimation(null), 2000);
+      }, 1000);
     });
 
     socket.on("reconnect_failed", () => {
