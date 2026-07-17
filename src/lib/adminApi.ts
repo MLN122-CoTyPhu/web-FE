@@ -1,4 +1,5 @@
-const API_BASE = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000";
+const isProd = process.env.NODE_ENV === "production";
+const API_BASE = isProd ? "/admin-api" : (process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000");
 
 export interface AdminRoomSummary {
   id: string;
