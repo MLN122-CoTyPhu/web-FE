@@ -1148,9 +1148,11 @@ function QuizModal({ quiz, myPlayerId, playerName, onAnswer, onReady }: {
               Giá mua nếu trả lời đúng: <span style={{ color: "var(--gold-400)", fontWeight: 700 }}>${quiz.price}</span>
             </p>
           </div>
-          <p className="font-semibold text-base leading-snug" style={{ color: "var(--text-primary)" }}>
-            {quiz.question}
-          </p>
+          {isMe && (
+            <p className="font-semibold text-base leading-snug" style={{ color: "var(--text-primary)" }}>
+              {quiz.question}
+            </p>
+          )}
         </div>
 
         {/* Options / waiting */}
