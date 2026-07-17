@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/admin-api/:path*",
-        destination: "https://grand-unity-production-0f12.up.railway.app/admin/:path*",
+        destination: "https://grand-unity-production-0f12.up.railway.app/:path*",
       },
     ];
   },
