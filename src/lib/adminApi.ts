@@ -100,6 +100,12 @@ export const adminApi = {
       method: "POST",
       body: JSON.stringify({ note }),
     }),
+
+  deleteRoom: (roomCode: string) =>
+    request<{ ok: true }>(`/admin/rooms/${roomCode}`, { method: "DELETE" }),
+
+  cleanupWaitingRooms: () =>
+    request<{ ok: true; deletedCount: number }>("/admin/rooms/cleanup", { method: "POST" }),
 };
 
 export { AdminApiError };

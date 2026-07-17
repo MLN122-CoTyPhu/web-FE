@@ -58,6 +58,33 @@ export default function AdminRoomsPage() {
     }
   };
 
+  const handleDeleteRoom = async (roomCode: string) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa phòng ${roomCode}? Hành động này sẽ xóa vĩnh viễn phòng chơi và toàn bộ thông tin người chơi.`)) return;
+    setBusyKey(roomCode);
+    try {
+      await adminApi.deleteRoom(roomCode);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể xóa phòng.");
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const handleCleanup = async () => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa toàn bộ các phòng đang chờ chưa bắt đầu chơi mà không có người hoặc chỉ có 1 người để làm sạch dữ liệu?")) return;
+    setBusyKey("cleanup");
+    try {
+      const res = await adminApi.cleanupWaitingRooms();
+      alert(`Dọn dẹp thành công! Đã xóa ${res.deletedCount || 0} phòng chờ trống.`);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể dọn dẹp phòng.");
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
   const rankNum = rank ? Number(rank) : null;
 
   // Khi lọc theo hạng: chỉ giữ phòng đã kết thúc và có người ở đúng hạng đó,
@@ -78,6 +105,19 @@ export default function AdminRoomsPage() {
             Danh sách phòng
           </h1>
           <RefreshButton onClick={load} loading={loading} />
+          <button
+            onClick={handleCleanup}
+            disabled={busyKey === "cleanup"}
+            className="text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all hover:bg-[rgba(220,53,69,0.25)]"
+            style={{
+              background: "rgba(220,53,69,0.15)",
+              border: "1px solid rgba(220,53,69,0.4)",
+              color: "#ff6b7a",
+            }}
+            title="Xóa toàn bộ phòng đang chờ có 0 hoặc 1 người tham gia"
+          >
+            🧹 {busyKey === "cleanup" ? "Đang dọn..." : "Dọn phòng chờ trống"}
+          </button>
         </div>
         <div className="flex gap-2">
           <select
@@ -182,7 +222,7 @@ export default function AdminRoomsPage() {
                 <th className="text-left px-4 py-2.5">Số người</th>
                 <th className="text-left px-4 py-2.5">Người thắng</th>
                 <th className="text-left px-4 py-2.5">Kết thúc lúc</th>
-                <th className="text-left px-4 py-2.5">Chi tiết</th>
+                <th className="text-left px-4 py-2.5">Hành động</th>
               </tr>
             </thead>
             <tbody>
@@ -208,13 +248,24 @@ export default function AdminRoomsPage() {
                         {room.finished_at ? new Date(room.finished_at).toLocaleString("vi-VN") : "—"}
                       </td>
                       <td className="px-4 py-2.5">
-                        <button
-                          onClick={() => setExpandedCode(isExpanded ? null : room.room_code)}
-                          className="text-xs px-3 py-1.5 rounded-lg"
-                          style={{ border: "1px solid rgba(232,185,35,0.35)", color: "var(--gold-400)" }}
-                        >
-                          {isExpanded ? "Ẩn ▲" : "Xem ▼"}
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setExpandedCode(isExpanded ? null : room.room_code)}
+                            className="text-xs px-3 py-1.5 rounded-lg"
+                            style={{ border: "1px solid rgba(232,185,35,0.35)", color: "var(--gold-400)" }}
+                          >
+                            {isExpanded ? "Ẩn ▲" : "Xem ▼"}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteRoom(room.room_code)}
+                            disabled={busyKey === room.room_code}
+                            className="text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-[rgba(220,53,69,0.2)] transition-all"
+                            style={{ border: "1px solid rgba(220,53,69,0.35)", color: "#ff6b7a" }}
+                            title="Xóa vĩnh viễn phòng này"
+                          >
+                            🗑️ {busyKey === room.room_code ? "..." : "Xóa"}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                     {isExpanded && (
