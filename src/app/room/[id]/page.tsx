@@ -1494,14 +1494,16 @@ export default function RoomPage() {
     }
   }, [lastCard]);
 
-  const isBusy = !!pendingMove || !!landingCell || !!quizSession || !!voteSession || !!lastCard || isRolling || !!lastQuizResult;
+  const myPlayer = room?.players.find(p => p.socketId === socket?.id);
+  const isMyQuiz = quizSession?.playerId === myPlayer?.id;
+  const isBusyForMe = !!pendingMove || isRolling || !!landingCell || (!!quizSession && isMyQuiz) || !!voteSession || !!capturedCard || !!lastQuizResult;
 
-  // Auto-close info reference modal when the game state is busy (movement, turns, modals)
+  // Auto-close info reference modal when the game state is busy for me (movement, turns, modals)
   useEffect(() => {
-    if (isBusy && viewCell) {
+    if (isBusyForMe && viewCell) {
       setViewCell(null);
     }
-  }, [isBusy, viewCell]);
+  }, [isBusyForMe, viewCell]);
 
   useEffect(() => {
     if (!roomCode) return;
@@ -1640,7 +1642,6 @@ export default function RoomPage() {
 
   const currentPlayer = room.players[room.currentTurnIndex];
   const isMyTurn = currentPlayer?.socketId === socket?.id;
-  const myPlayer = room.players.find(p => p.socketId === socket?.id);
   const myVisualPos = myPlayer ? (visualPositions[myPlayer.id] ?? myPlayer.position) : -1;
 
   const sortedScores = [...room.players]
@@ -1676,7 +1677,7 @@ export default function RoomPage() {
       {!showGameOver && !landingCell && !pendingMove && turnHasAnimated && capturedCard && (
         <CardModal card={capturedCard} onClose={handleDismissCard} />
       )}
-      {!showGameOver && !landingCell && !pendingMove && turnHasAnimated && !capturedCard && quizSession && (
+      {!showGameOver && !landingCell && !pendingMove && turnHasAnimated && !capturedCard && quizSession && isMyQuiz && (
         <QuizModal quiz={quizSession} myPlayerId={myPlayer?.id} playerName={quizOwnerName} onAnswer={answerQuiz} onReady={quizReady} />
       )}
       {!showGameOver && !landingCell && !pendingMove && !quizSession && lastQuizResult && (
@@ -1896,7 +1897,7 @@ maxWidth: "1900px",
                   onTokenClick={walkToken}
                   cellOwners={room.cellOwners}
                   onCellInfo={setViewCell}
-                  clickable={!isBusy}
+                  clickable={!isBusyForMe}
                 />
               ))}
 
